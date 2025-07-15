@@ -9,41 +9,56 @@ namespace PxG.Handlers
     {
         private const int WH_KEYBOARD_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
+        private const int WM_KEYUP = 0x0101;
         private readonly LowLevelKeyboardProc _proc;
         private IntPtr _hookID = IntPtr.Zero;
         private static GlobalKeyboardHook? _instance;
         
-        // Evento que será disparado quando uma tecla específica for pressionada
-        public event EventHandler<Keys>? KeyPressed;
+        // Eventos para pressionar e soltar teclas
+        public event EventHandler<Keys>? KeyDown;
+        public event EventHandler<Keys>? KeyUp;
         
         // Teclas que estamos monitorando
-        private Keys _targetKey = Keys.None;
-        private bool _requireCtrl = false;
-        private bool _requireAlt = false;
-        private bool _requireShift = false;
+        private readonly HashSet<Keys> _targetKeys = new();
+
+        /// <summary>
+        /// Obtém o número de teclas que estão sendo monitoradas atualmente
+        /// </summary>
+        public int TargetKeyCount => _targetKeys.Count;
 
         public GlobalKeyboardHook()
         {
             _proc = HookCallback;
             _instance = this;
+            _hookID = SetHook(_proc); // O hook começa a ouvir imediatamente
         }
 
         /// <summary>
-        /// Define qual tecla ou combina��ão monitorar
+        /// Adiciona uma tecla (com modificadores) para ser monitorada.
         /// </summary>
-        public void SetTargetKey(Keys key)
+        public void AddTargetKey(Keys key)
         {
-            // Extrai os modificadores da tecla
-            _requireCtrl = (key & Keys.Control) == Keys.Control;
-            _requireAlt = (key & Keys.Alt) == Keys.Alt;
-            _requireShift = (key & Keys.Shift) == Keys.Shift;
-            
-            // Remove os modificadores para obter só a tecla principal
-            _targetKey = key & ~Keys.Control & ~Keys.Alt & ~Keys.Shift;
+            _targetKeys.Add(key);
         }
 
         /// <summary>
-        /// Inicia o monitoramento
+        /// Remove uma tecla da lista de monitoramento.
+        /// </summary>
+        public void RemoveTargetKey(Keys key)
+        {
+            _targetKeys.Remove(key);
+        }
+
+        /// <summary>
+        /// Limpa todas as teclas monitoradas.
+        /// </summary>
+        public void ClearTargetKeys()
+        {
+            _targetKeys.Clear();
+        }
+
+        /// <summary>
+        /// Inicia o monitoramento (se parado).
         /// </summary>
         public void Start()
         {
@@ -73,31 +88,31 @@ namespace PxG.Handlers
 
         private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN && _instance != null)
+            if (nCode >= 0 && _instance != null)
             {
                 int vkCode = Marshal.ReadInt32(lParam);
                 Keys pressedKey = (Keys)vkCode;
 
-                // Verifica se é a tecla que estamos monitorando
-                if (pressedKey == _instance._targetKey)
+                // Constrói a tecla completa com os modificadores atuais
+                bool ctrlPressed = (GetAsyncKeyState(0x11) & 0x8000) != 0 || (GetAsyncKeyState(0xA2) & 0x8000) != 0 || (GetAsyncKeyState(0xA3) & 0x8000) != 0;
+                bool altPressed = (GetAsyncKeyState(0x12) & 0x8000) != 0 || (GetAsyncKeyState(0xA4) & 0x8000) != 0 || (GetAsyncKeyState(0xA5) & 0x8000) != 0;
+                bool shiftPressed = (GetAsyncKeyState(0x10) & 0x8000) != 0 || (GetAsyncKeyState(0xA0) & 0x8000) != 0 || (GetAsyncKeyState(0xA1) & 0x8000) != 0;
+
+                Keys keyWithModifiers = pressedKey;
+                if (ctrlPressed) keyWithModifiers |= Keys.Control;
+                if (altPressed) keyWithModifiers |= Keys.Alt;
+                if (shiftPressed) keyWithModifiers |= Keys.Shift;
+
+                // Verifica se a tecla pressionada (com modificadores) é uma das que estamos monitorando
+                if (_instance._targetKeys.Contains(keyWithModifiers))
                 {
-                    // Verifica os modificadores
-                    // Usando GetAsyncKeyState para verificar o estado atual dos modificadores
-                    bool ctrlPressed = (GetAsyncKeyState(0x11) & 0x8000) != 0 || (GetAsyncKeyState(0xA2) & 0x8000) != 0 || (GetAsyncKeyState(0xA3) & 0x8000) != 0; // VK_CONTROL, VK_LCONTROL, VK_RCONTROL
-                    bool altPressed = (GetAsyncKeyState(0x12) & 0x8000) != 0 || (GetAsyncKeyState(0xA4) & 0x8000) != 0 || (GetAsyncKeyState(0xA5) & 0x8000) != 0;   // VK_MENU (Alt), VK_LMENU, VK_RMENU
-                    bool shiftPressed = (GetAsyncKeyState(0x10) & 0x8000) != 0 || (GetAsyncKeyState(0xA0) & 0x8000) != 0 || (GetAsyncKeyState(0xA1) & 0x8000) != 0; // VK_SHIFT, VK_LSHIFT, VK_RSHIFT
-
-                    if (ctrlPressed == _instance._requireCtrl &&
-                        altPressed == _instance._requireAlt &&
-                        shiftPressed == _instance._requireShift)
+                    if (wParam == (IntPtr)WM_KEYDOWN)
                     {
-                        // Combina a tecla com os modificadores para o evento
-                        Keys fullKey = pressedKey;
-                        if (ctrlPressed) fullKey |= Keys.Control;
-                        if (altPressed) fullKey |= Keys.Alt;
-                        if (shiftPressed) fullKey |= Keys.Shift;
-
-                        _instance.KeyPressed?.Invoke(_instance, fullKey);
+                        _instance.KeyDown?.Invoke(_instance, keyWithModifiers);
+                    }
+                    else if (wParam == (IntPtr)WM_KEYUP)
+                    {
+                        _instance.KeyUp?.Invoke(_instance, keyWithModifiers);
                     }
                 }
             }

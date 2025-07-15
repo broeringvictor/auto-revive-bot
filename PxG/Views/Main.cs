@@ -11,25 +11,30 @@ namespace PxG.Views
         // Handlers de lógica
         private readonly WindowSelector _windowSelector;
         private readonly RevivePokemonHandler _reviveHandler;
+        private readonly MedicinePokemonHandler _medicineHandler;
         private readonly GlobalMouseHook _mouseHook;
         private readonly GlobalKeyboardHook _keyboardHook;
 
         // Variáveis de estado
-        private Point _pokemonBarPosition;
-        private bool _isCapturingPosition;
+        private Point _revivePosition;
+        private Point _medicinePosition;
+        
+        private bool _isCapturingRevivePosition;
+        private bool _isCapturingMedicinePosition;
+
         private bool _isCapturingPokemonKey;
         private bool _isCapturingReviveKey;
-        private bool _isCapturingHotkeyKey;
-        
+        private bool _isCapturingMedicineKey;
+
         // Timer para timeout da captura de teclas
         private readonly System.Windows.Forms.Timer _captureTimeout;
         
         // Configurações da aplicação
         private AppSettings _settings;
         
-        // Variáveis para o modo automático
+        // Controle do modo automático
         private bool _isAutoModeActive = false;
-        private Keys _hotkeyToTrigger = Keys.None;
+        private readonly Dictionary<Keys, CancellationTokenSource> _activeTasks = new();
 
         public Main()
         {
@@ -40,6 +45,7 @@ namespace PxG.Views
             
             _windowSelector = new WindowSelector();
             _reviveHandler = new RevivePokemonHandler();
+            _medicineHandler = new MedicinePokemonHandler();
             
             // Inicializa o hook e se inscreve no evento de clique
             _mouseHook = new GlobalMouseHook();
@@ -47,7 +53,8 @@ namespace PxG.Views
             
             // Inicializa o hook global de teclado
             _keyboardHook = new GlobalKeyboardHook();
-            _keyboardHook.KeyPressed += OnGlobalKeyPressed;
+            _keyboardHook.KeyDown += OnGlobalKeyDown;
+            _keyboardHook.KeyUp += OnGlobalKeyUp;
             
             // Configura timer para timeout da captura (30 segundos)
             _captureTimeout = new System.Windows.Forms.Timer();
@@ -74,13 +81,22 @@ namespace PxG.Views
             // Carrega as teclas salvas
             txtPokemonKey.Text = _settings.PokemonKey;
             txtReviveKey.Text = _settings.ReviveKey;
+            txtMedicineKey.Text = _settings.MedicineKey;
             
-            // Carrega a posição salva
-            if (_settings.HasValidPosition)
+            // Carrega a posição salva para o revive
+            if (_settings.RevivePositionX > 0 && _settings.RevivePositionY > 0)
             {
-                _pokemonBarPosition = new Point(_settings.PokemonBarPositionX, _settings.PokemonBarPositionY);
-                lblStatus.Text = $"Posição carregada: X={_pokemonBarPosition.X}, Y={_pokemonBarPosition.Y}";
+                _revivePosition = new Point(_settings.RevivePositionX, _settings.RevivePositionY);
+                lblStatus.Text = $"Posição Revive: X={_revivePosition.X}, Y={_revivePosition.Y}";
                 lblStatus.ForeColor = Color.Green;
+            }
+            
+            // Carrega a posição salva para a medicina
+            if (_settings.MedicinePositionX > 0 && _settings.MedicinePositionY > 0)
+            {
+                _medicinePosition = new Point(_settings.MedicinePositionX, _settings.MedicinePositionY);
+                lblMedicineStatus.Text = $"Posição Medicina: X={_medicinePosition.X}, Y={_medicinePosition.Y}";
+                lblMedicineStatus.ForeColor = Color.Green;
             }
             
             // Atualiza a lista de janelas e tenta selecionar a última janela usada
@@ -105,9 +121,13 @@ namespace PxG.Views
         {
             _settings.PokemonKey = txtPokemonKey.Text;
             _settings.ReviveKey = txtReviveKey.Text;
-            _settings.PokemonBarPositionX = _pokemonBarPosition.X;
-            _settings.PokemonBarPositionY = _pokemonBarPosition.Y;
-            _settings.HasValidPosition = _pokemonBarPosition != Point.Empty;
+            _settings.MedicineKey = txtMedicineKey.Text;
+            
+            _settings.RevivePositionX = _revivePosition.X;
+            _settings.RevivePositionY = _revivePosition.Y;
+            
+            _settings.MedicinePositionX = _medicinePosition.X;
+            _settings.MedicinePositionY = _medicinePosition.Y;
             
             if (cmbWindows.SelectedItem is WindowInfo selectedWindow)
             {
@@ -116,7 +136,7 @@ namespace PxG.Views
             
             if (SettingsManager.SaveSettings(_settings))
             {
-                // Feedback sutil de que as configurações foram salvas (opcional)
+                // Feedback sutil de que as configura��ões foram salvas (opcional)
                 // Console.WriteLine("Configurações salvas com sucesso!");
             }
         }
@@ -125,14 +145,16 @@ namespace PxG.Views
         {
             _captureTimeout.Stop();
             CancelAllCaptures();
-            lblStatus.Text = "Status: Captura cancelada por timeout";
+            lblStatus.Text = "Status: Captura de Revive cancelada por timeout";
             lblStatus.ForeColor = Color.Red;
+            lblMedicineStatus.Text = "Status: Captura de Medicina cancelada por timeout";
+            lblMedicineStatus.ForeColor = Color.Red;
         }
 
         private void OnFormActivated(object? sender, EventArgs e)
         {
             // Quando o formulário é ativado durante captura, garante que tem foco
-            if (_isCapturingPokemonKey || _isCapturingReviveKey)
+            if (_isCapturingPokemonKey || _isCapturingReviveKey || _isCapturingMedicineKey)
             {
                 this.Focus();
             }
@@ -141,11 +163,11 @@ namespace PxG.Views
         private void OnFormLostFocus(object? sender, EventArgs e)
         {
             // Se perdeu o foco durante captura, tenta recuperar depois de um delay
-            if (_isCapturingPokemonKey || _isCapturingReviveKey)
+            if (_isCapturingPokemonKey || _isCapturingReviveKey || _isCapturingMedicineKey)
             {
                 Task.Delay(100).ContinueWith(_ => {
                     this.Invoke(() => {
-                        if (_isCapturingPokemonKey || _isCapturingReviveKey)
+                        if (_isCapturingPokemonKey || _isCapturingReviveKey || _isCapturingMedicineKey)
                         {
                             this.BringToFront();
                             this.Focus();
@@ -164,10 +186,23 @@ namespace PxG.Views
 
         private void btnSetPosition_Click(object sender, EventArgs e)
         {
-            // Inicia o modo de captura
-            _isCapturingPosition = true;
-            lblStatus.Text = "Status: Clique para gravar a posição do alvo...";
+            // Inicia o modo de captura para o Revive
+            _isCapturingRevivePosition = true;
+            _isCapturingMedicinePosition = false; // Garante que o outro modo está desativado
+            lblStatus.Text = "Status: Clique para gravar a posição do Revive...";
             lblStatus.ForeColor = Color.Blue;
+            
+            // Ativa o hook para observar o próximo clique
+            _mouseHook.Start();
+        }
+
+        private void btnSetMedicinePosition_Click(object sender, EventArgs e)
+        {
+            // Inicia o modo de captura para a Medicina
+            _isCapturingMedicinePosition = true;
+            _isCapturingRevivePosition = false; // Garante que o outro modo está desativado
+            lblMedicineStatus.Text = "Status: Clique para gravar a posição da Medicina...";
+            lblMedicineStatus.ForeColor = Color.Blue;
             
             // Ativa o hook para observar o próximo clique
             _mouseHook.Start();
@@ -221,6 +256,30 @@ namespace PxG.Views
             this.TopMost = false;
         }
 
+        private void btnCaptureMedicineKey_Click(object sender, EventArgs e)
+        {
+            // Cancela qualquer captura em andamento
+            CancelAllCaptures();
+            
+            _isCapturingMedicineKey = true;
+            btnCaptureMedicineKey.Text = "Pressione uma tecla...";
+            btnCaptureMedicineKey.BackColor = Color.LightBlue;
+            btnCaptureMedicineKey.Enabled = false;
+            lblMedicineStatus.Text = "Status: Pressione a tecla para a Medicina (ESC para cancelar)";
+            lblMedicineStatus.ForeColor = Color.Blue;
+            
+            // Inicia o timeout
+            _captureTimeout.Start();
+            
+            // Força o foco no formulário
+            this.WindowState = FormWindowState.Normal;
+            this.TopMost = true;
+            this.BringToFront();
+            this.Activate();
+            this.Focus();
+            this.TopMost = false;
+        }
+
         /// <summary>
         /// Cancela todas as capturas em andamento e restaura o estado dos botões
         /// </summary>
@@ -243,16 +302,26 @@ namespace PxG.Views
                 btnCaptureReviveKey.BackColor = SystemColors.Control;
                 btnCaptureReviveKey.Enabled = true;
             }
+
+            if (_isCapturingMedicineKey)
+            {
+                _isCapturingMedicineKey = false;
+                btnCaptureMedicineKey.Text = "Capturar Tecla";
+                btnCaptureMedicineKey.BackColor = SystemColors.Control;
+                btnCaptureMedicineKey.Enabled = true;
+            }
         }
 
         private void OnFormKeyDown(object? sender, KeyEventArgs e)
         {
             // Se ESC for pressionado durante a captura, cancela
-            if (e.KeyCode == Keys.Escape && (_isCapturingPokemonKey || _isCapturingReviveKey || _isCapturingHotkeyKey))
+            if (e.KeyCode == Keys.Escape && (_isCapturingPokemonKey || _isCapturingReviveKey || _isCapturingMedicineKey))
             {
                 CancelAllCaptures();
                 lblStatus.Text = "Status: Captura cancelada";
                 lblStatus.ForeColor = Color.Orange;
+                lblMedicineStatus.Text = "Status: Captura cancelada";
+                lblMedicineStatus.ForeColor = Color.Orange;
                 e.Handled = true;
                 return;
             }
@@ -304,6 +373,23 @@ namespace PxG.Views
                 // Salva automaticamente a nova configuração
                 SaveCurrentSettings();
             }
+            else if (_isCapturingMedicineKey)
+            {
+                _captureTimeout.Stop();
+                _isCapturingMedicineKey = false;
+                
+                string keyCombo = GetKeyComboString(e);
+                txtMedicineKey.Text = keyCombo;
+                
+                btnCaptureMedicineKey.Text = "Capturar Tecla";
+                btnCaptureMedicineKey.BackColor = SystemColors.Control;
+                btnCaptureMedicineKey.Enabled = true;
+                lblMedicineStatus.Text = $"✓ Tecla Medicina capturada: {keyCombo}";
+                lblMedicineStatus.ForeColor = Color.Green;
+                e.Handled = true;
+                
+                SaveCurrentSettings();
+            }
         }
 
         /// <summary>
@@ -336,23 +422,30 @@ namespace PxG.Views
         // Este método será chamado pelo hook quando um clique ocorrer EM QUALQUER LUGAR
         private void OnGlobalMouseClick(object? sender, Handlers.GlobalMouseHook.Point e)
         {
-            // Só faz algo se estivermos no modo de captura
-            if (_isCapturingPosition)
+            // Verifica qual posição está sendo capturada
+            if (_isCapturingRevivePosition)
             {
-                // Imediatamente desativa o modo de captura e o hook para pegar apenas UM clique
-                _isCapturingPosition = false;
+                _isCapturingRevivePosition = false;
                 _mouseHook.Stop();
 
-                // Grava a posição do clique
-                _pokemonBarPosition = new Point(e.X, e.Y);
+                _revivePosition = new Point(e.X, e.Y);
 
-                // IMPORTANTE: Como o hook roda em outra thread, precisamos usar Invoke
-                // para atualizar a interface gráfica de forma segura.
                 this.Invoke(() => {
-                    lblStatus.Text = $"Posição capturada: X={_pokemonBarPosition.X}, Y={_pokemonBarPosition.Y}";
+                    lblStatus.Text = $"Posição Revive: X={_revivePosition.X}, Y={_revivePosition.Y}";
                     lblStatus.ForeColor = Color.Green;
-                    
-                    // Salva automaticamente a nova posição
+                    SaveCurrentSettings();
+                });
+            }
+            else if (_isCapturingMedicinePosition)
+            {
+                _isCapturingMedicinePosition = false;
+                _mouseHook.Stop();
+
+                _medicinePosition = new Point(e.X, e.Y);
+
+                this.Invoke(() => {
+                    lblMedicineStatus.Text = $"Posição Medicina: X={_medicinePosition.X}, Y={_medicinePosition.Y}";
+                    lblMedicineStatus.ForeColor = Color.Green;
                     SaveCurrentSettings();
                 });
             }
@@ -360,214 +453,164 @@ namespace PxG.Views
         
         private void btnExecuteRevive_Click(object sender, EventArgs e)
         {
-            // Toggle do modo automático
+            // Toggle do modo automático para Revive
+            ToggleAutoMode(btnExecuteRevive, txtReviveKey, lblStatus, "Revive");
+        }
+
+        private void btnExecuteMedicine_Click(object sender, EventArgs e)
+        {
+            // Toggle do modo automático para Medicine
+            ToggleAutoMode(btnExecuteMedicine, txtMedicineKey, lblMedicineStatus, "Medicine");
+        }
+
+        private void ToggleAutoMode(Button button, TextBox keyTextBox, Label statusLabel, string modeName)
+        {
+            _isAutoModeActive = _activeTasks.Count > 0;
+
             if (!_isAutoModeActive)
             {
-                // Ativar modo automático
-                if (!StartAutoMode())
-                    return;
+                if (StartAutoMode(keyTextBox, statusLabel, modeName))
+                {
+                    button.Text = $"🔴 PARAR MODO AUTO ({modeName})";
+                    button.BackColor = Color.Red;
+                    button.ForeColor = Color.White;
+                }
             }
             else
             {
-                // Desativar modo automático
-                StopAutoMode();
+                StopAutoMode(keyTextBox, statusLabel, modeName);
+                button.Text = $"▶️ INICIAR MODO AUTO ({modeName})";
+                button.BackColor = SystemColors.Control;
+                button.ForeColor = SystemColors.ControlText;
             }
         }
 
-        /// <summary>
-        /// Método chamado quando uma tecla global é pressionada
-        /// </summary>
-        private void OnGlobalKeyPressed(object? sender, Keys pressedKey)
+        private void OnGlobalKeyDown(object? sender, Keys pressedKey)
         {
-            // Verifica se é a hotkey configurada e se o modo automático está ativo
-            if (_isAutoModeActive && pressedKey == _hotkeyToTrigger)
+            if (!_isAutoModeActive || _activeTasks.ContainsKey(pressedKey)) return;
+
+            if (cmbWindows.SelectedItem is not WindowInfo selectedWindow) return;
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            _activeTasks[pressedKey] = cts;
+
+            Task.Run(async () =>
             {
-                // Executa o revive em uma task separada para não bloquear o hook
-                Task.Run(() => {
-                    try 
+                while (!cts.Token.IsCancellationRequested)
+                {
+                    if (KeyboardHandler.TryParseKey(txtReviveKey.Text, out var reviveKey) && pressedKey == reviveKey)
                     {
-                        this.Invoke(() => ExecuteAutoRevive());
+                        ExecuteAutoRevive(selectedWindow);
                     }
-                    catch (Exception ex)
+                    else if (KeyboardHandler.TryParseKey(txtMedicineKey.Text, out var medicineKey) && pressedKey == medicineKey)
                     {
-                        Console.WriteLine($"Erro ao executar revive automático: {ex.Message}");
+                        ExecuteAutoMedicine(selectedWindow);
                     }
-                });
+                    await Task.Delay(500, cts.Token); // Delay entre execuções
+                }
+            }, cts.Token);
+        }
+
+        private void OnGlobalKeyUp(object? sender, Keys releasedKey)
+        {
+            if (_activeTasks.TryGetValue(releasedKey, out var cts))
+            {
+                cts.Cancel();
+                _activeTasks.Remove(releasedKey);
             }
         }
 
-        /// <summary>
-        /// Inicia o modo automático de revive
-        /// </summary>
-        private bool StartAutoMode()
+        private bool StartAutoMode(TextBox keyTextBox, Label statusLabel, string modeName)
         {
-            try
+            if (!KeyboardHandler.TryParseKey(keyTextBox.Text, out var hotkey))
             {
-                if (cmbWindows.SelectedItem is not WindowInfo selectedWindow)
-                {
-                    MessageBox.Show("Por favor, selecione uma janela.");
-                    return false;
-                }
-
-                // Valida as configurações
-                if (!KeyboardHandler.TryParseKey(txtPokemonKey.Text, out var pokemonKey) ||
-                    !KeyboardHandler.TryParseKey(txtReviveKey.Text, out var reviveKey))
-                {
-                    MessageBox.Show($"Tecla inválida. {KeyboardHandler.GetValidKeysExamples()}");
-                    return false;
-                }
-
-                if (_pokemonBarPosition == Point.Empty)
-                {
-                    MessageBox.Show("Por favor, defina a posição do Pokémon primeiro.");
-                    return false;
-                }
-
-                // Usa InputBox simples para pedir a hotkey
-                using var inputForm = new Form();
-                inputForm.Text = "Configurar Hotkey";
-                inputForm.Size = new Size(400, 200);
-                inputForm.StartPosition = FormStartPosition.CenterParent;
-                
-                var label = new Label();
-                label.Text = "Digite a tecla que irá disparar o revive automaticamente:\nExemplos: F5, Ctrl+R, Shift+F1, etc.";
-                label.Location = new Point(20, 20);
-                label.Size = new Size(350, 40);
-                
-                var textBox = new TextBox();
-                textBox.Text = "F5";
-                textBox.Location = new Point(20, 70);
-                textBox.Size = new Size(350, 20);
-                
-                var okButton = new Button();
-                okButton.Text = "OK";
-                okButton.Location = new Point(200, 110);
-                okButton.DialogResult = DialogResult.OK;
-                
-                var cancelButton = new Button();
-                cancelButton.Text = "Cancelar";
-                cancelButton.Location = new Point(280, 110);
-                cancelButton.DialogResult = DialogResult.Cancel;
-                
-                inputForm.Controls.AddRange(new Control[] { label, textBox, okButton, cancelButton });
-                inputForm.AcceptButton = okButton;
-                inputForm.CancelButton = cancelButton;
-
-                if (inputForm.ShowDialog() != DialogResult.OK || string.IsNullOrWhiteSpace(textBox.Text))
-                    return false;
-
-                string hotkeyInput = textBox.Text;
-
-                if (!KeyboardHandler.TryParseKey(hotkeyInput, out _hotkeyToTrigger))
-                {
-                    MessageBox.Show($"Tecla inválida: {hotkeyInput}\n{KeyboardHandler.GetValidKeysExamples()}");
-                    return false;
-                }
-
-                // Configura e inicia o hook para a tecla específica
-                _keyboardHook.SetTargetKey(_hotkeyToTrigger);
-                _keyboardHook.Start();
-
-                // Ativa o modo automático
-                _isAutoModeActive = true;
-                
-                // Atualiza interface
-                btnExecuteRevive.Text = "🔴 PARAR MODO AUTO";
-                btnExecuteRevive.BackColor = Color.Red;
-                btnExecuteRevive.ForeColor = Color.White;
-                lblStatus.Text = $"🟢 MODO AUTO ATIVO - Pressione {hotkeyInput} para usar revive";
-                lblStatus.ForeColor = Color.Green;
-
-                // Salva configurações
-                SaveCurrentSettings();
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Erro ao iniciar modo automático: {ex.Message}");
+                MessageBox.Show($"A tecla de atalho para '{modeName}' é inv��lida.", "Erro de Configuração");
                 return false;
             }
-        }
 
-        /// <summary>
-        /// Para o modo automático de revive
-        /// </summary>
-        private void StopAutoMode()
-        {
-            _isAutoModeActive = false;
-            _hotkeyToTrigger = Keys.None;
+            _keyboardHook.AddTargetKey(hotkey);
+            _isAutoModeActive = true;
             
-            // Para o hook global
-            _keyboardHook.Stop();
-
-            // Restaura interface
-            btnExecuteRevive.Text = "▶️ INICIAR MODO AUTO";
-            btnExecuteRevive.BackColor = SystemColors.Control;
-            btnExecuteRevive.ForeColor = SystemColors.ControlText;
-            lblStatus.Text = "Status: Modo automático desativado";
-            lblStatus.ForeColor = Color.Orange;
+            statusLabel.Text = $"🟢 MODO AUTO ATIVO - Pressione {keyTextBox.Text}";
+            statusLabel.ForeColor = Color.Green;
+            
+            return true;
         }
 
-        /// <summary>
-        /// Executa o revive quando a hotkey é pressionada
-        /// </summary>
-        private void ExecuteAutoRevive()
+        private void StopAutoMode(TextBox keyTextBox, Label statusLabel, string modeName)
         {
-            try
+            if (KeyboardHandler.TryParseKey(keyTextBox.Text, out var hotkey))
             {
-                if (!_isAutoModeActive)
-                    return;
+                _keyboardHook.RemoveTargetKey(hotkey);
+                if (_activeTasks.TryGetValue(hotkey, out var cts))
+                {
+                    cts.Cancel();
+                    _activeTasks.Remove(hotkey);
+                }
+            }
 
-                if (cmbWindows.SelectedItem is not WindowInfo selectedWindow)
-                    return;
+            if (_keyboardHook.TargetKeyCount == 0)
+            {
+                _isAutoModeActive = false;
+            }
 
-                // Converte a posição para relativa à janela
-                var relativePoint = selectedWindow.ScreenToClient(_pokemonBarPosition);
+            statusLabel.Text = $"Status: Modo automático ({modeName}) desativado";
+            statusLabel.ForeColor = Color.Orange;
+        }
 
-                // Converte as teclas
-                if (!KeyboardHandler.TryParseKey(txtPokemonKey.Text, out var pokemonKey) ||
-                    !KeyboardHandler.TryParseKey(txtReviveKey.Text, out var reviveKey))
-                    return;
+        private void ExecuteAutoRevive(WindowInfo selectedWindow)
+        {
+            if (!KeyboardHandler.TryParseKey(txtPokemonKey.Text, out var pokemonKey) ||
+                !KeyboardHandler.TryParseKey(txtReviveKey.Text, out var reviveKey))
+                return;
 
-                // Executa o revive
-                _reviveHandler.ExecuteRevive(
-                    selectedWindow.Handle,
-                    pokemonKey,
-                    reviveKey,
-                    relativePoint
-                );
+            var relativePoint = selectedWindow.ScreenToClient(_revivePosition);
+            _reviveHandler.ExecuteRevive(selectedWindow.Handle, pokemonKey, reviveKey, relativePoint);
 
-                // Atualiza status temporariamente
-                var originalText = lblStatus.Text;
-                var originalColor = lblStatus.ForeColor;
-                
+            this.Invoke(() => {
                 lblStatus.Text = "⚡ Revive executado!";
                 lblStatus.ForeColor = Color.Blue;
+                Task.Delay(1000).ContinueWith(_ => this.Invoke(() => {
+                    if (_isAutoModeActive)
+                    {
+                        lblStatus.Text = $"🟢 MODO AUTO ATIVO - Pressione {txtReviveKey.Text}";
+                        lblStatus.ForeColor = Color.Green;
+                    }
+                }));
+            });
+        }
 
-                // Restaura o status original após 2 segundos
-                Task.Delay(2000).ContinueWith(_ => {
-                    this.Invoke(() => {
-                        if (_isAutoModeActive)
-                        {
-                            lblStatus.Text = originalText;
-                            lblStatus.ForeColor = originalColor;
-                        }
-                    });
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Erro ao executar revive automático: {ex.Message}");
-            }
+        private void ExecuteAutoMedicine(WindowInfo selectedWindow)
+        {
+            if (!KeyboardHandler.TryParseKey(txtMedicineKey.Text, out var medicineKey)) return;
+
+            var relativePoint = selectedWindow.ScreenToClient(_medicinePosition);
+            _medicineHandler.ExecuteMedicine(selectedWindow.Handle, medicineKey, relativePoint);
+            
+            this.Invoke(() => {
+                lblMedicineStatus.Text = "💊 Medicina usada!";
+                lblMedicineStatus.ForeColor = Color.Blue;
+                Task.Delay(1000).ContinueWith(_ => this.Invoke(() => {
+                    if (_isAutoModeActive)
+                    {
+                        lblMedicineStatus.Text = $"🟢 MODO AUTO ATIVO - Pressione {txtMedicineKey.Text}";
+                        lblMedicineStatus.ForeColor = Color.Green;
+                    }
+                }));
+            });
         }
         
         // Garante que o hook seja desativado e as configurações sejam salvas ao fechar o formulário
         private void Main_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // Para o modo automático se estiver ativo
-            if (_isAutoModeActive)
-                StopAutoMode();
+            // Para todos os modos automáticos
+            _keyboardHook.ClearTargetKeys();
+            foreach (var cts in _activeTasks.Values)
+            {
+                cts.Cancel();
+            }
+            _activeTasks.Clear();
+            _isAutoModeActive = false;
             
             // Salva as configurações finais
             SaveCurrentSettings();

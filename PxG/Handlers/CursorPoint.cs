@@ -157,6 +157,24 @@ namespace PxG.Handlers
             mouse_event(MOUSEEVENTF_RIGHTUP, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
         }
 
+        /// <summary>
+        /// Move o cursor para uma posição específica dentro de uma janela.
+        /// </summary>
+        /// <param name="hWnd">O handle da janela</param>
+        /// <param name="windowPoint">A posição (X, Y) relativa ao canto superior esquerdo da janela</param>
+        public void MoveMouseToWindowPoint(IntPtr hWnd, System.Drawing.Point windowPoint)
+        {
+            // 1. Converte o ponto relativo da janela para um ponto absoluto na tela.
+            Point clientPoint = new Point { X = windowPoint.X, Y = windowPoint.Y };
+            if (!ClientToScreen(hWnd, ref clientPoint))
+            {
+                throw new InvalidOperationException("Não foi possível converter as coordenadas da janela para a tela.");
+            }
+
+            // 2. Move o cursor para o ponto exato na tela.
+            SetCursorPos(clientPoint.X, clientPoint.Y);
+        }
+
 
     }
 }

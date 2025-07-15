@@ -9,9 +9,21 @@ namespace PxG.Models
     {
         public string PokemonKey { get; set; } = "F1";
         public string ReviveKey { get; set; } = "F2";
+        public string MedicineKey { get; set; } = "F3";
+        
+        // Posições para Revive
+        public int RevivePositionX { get; set; } = 0;
+        public int RevivePositionY { get; set; } = 0;
+        
+        // Posições para Medicine
+        public int MedicinePositionX { get; set; } = 0;
+        public int MedicinePositionY { get; set; } = 0;
+        
+        public string LastSelectedWindow { get; set; } = "";
+        
+        // Propriedades obsoletas mantidas para compatibilidade (serão removidas em versões futuras)
         public int PokemonBarPositionX { get; set; } = 0;
         public int PokemonBarPositionY { get; set; } = 0;
-        public string LastSelectedWindow { get; set; } = "";
         public bool HasValidPosition { get; set; } = false;
     }
 

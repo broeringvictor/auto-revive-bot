@@ -23,11 +23,14 @@ namespace PxG.Handlers
                 throw new ArgumentException("O handle da janela alvo não pode ser nulo.", nameof(targetWindowHandle));
             }
 
+            // Salva a posição atual do mouse para restaurar depois
+            Point originalMousePosition = _cursorHandler.GetMousePositionInWindow(targetWindowHandle) ?? Point.Empty;
+
             // Etapa 1: Pressionar a tecla do Pokémon.
             // Objetivo: Garantir que o Pokémon esteja na pokébola ou cancelar qualquer ação anterior.
             // Se o Pokémon estiver fora, ele volta. Se já estiver na pokébola, nada acontece.
             KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
-            Thread.Sleep(500); // Atraso para o jogo processar o comando.
+            Thread.Sleep(300); // Atraso para o jogo processar o comando.
 
             // Etapa 2: Pressionar a tecla do item de reviver.
             // Objetivo: Ativar o item "revive", o que geralmente muda o cursor do mouse.
@@ -37,12 +40,18 @@ namespace PxG.Handlers
             // Etapa 3: Clicar na posição do Pokémon na barra.
             // Objetivo: Usar o item "revive" no Pokémon que está na posição especificada.
             _cursorHandler.LeftClickOnWindowPoint(targetWindowHandle, pokemonBarPosition);
-            Thread.Sleep(800); // Atraso longo para permitir que a animação ou menu de confirmação do jogo apareça.
+            Thread.Sleep(200); // Atraso longo para permitir que a animação ou menu de confirmação do jogo apareça.
 
             // Etapa 4: Pressionar a tecla do Pokémon novamente.
             // Objetivo: Confirmar o uso do revive e/ou trazer o Pokémon de volta à batalha.
             KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
-            Thread.Sleep(300); // Atraso final para a confirmação.
+            Thread.Sleep(200); 
+
+     
+            if (originalMousePosition != Point.Empty)
+            {
+                _cursorHandler.MoveMouseToWindowPoint(targetWindowHandle, originalMousePosition);
+            }
         }
     }
 }
