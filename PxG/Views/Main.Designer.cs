@@ -41,11 +41,11 @@
             btnCaptureReviveKey = new System.Windows.Forms.Button();
             grpRevive = new System.Windows.Forms.GroupBox();
             grpMedicine = new System.Windows.Forms.GroupBox();
-            lblMedicineKey = new System.Windows.Forms.Label();
-            btnCaptureMedicineKey = new System.Windows.Forms.Button();
-            txtMedicineKey = new System.Windows.Forms.TextBox();
             lblMedicineStatus = new System.Windows.Forms.Label();
             btnExecuteMedicine = new System.Windows.Forms.Button();
+            txtMedicineKey = new System.Windows.Forms.TextBox();
+            btnCaptureMedicineKey = new System.Windows.Forms.Button();
+            lblMedicineKey = new System.Windows.Forms.Label();
             btnSetMedicinePosition = new System.Windows.Forms.Button();
             grpRevive.SuspendLayout();
             grpMedicine.SuspendLayout();
@@ -106,26 +106,6 @@
             txtReviveKey.TabIndex = 5;
             txtReviveKey.Text = "F2";
             // 
-            // btnCapturePokemonKey
-            // 
-            btnCapturePokemonKey.Location = new System.Drawing.Point(6, 72);
-            btnCapturePokemonKey.Name = "btnCapturePokemonKey";
-            btnCapturePokemonKey.Size = new System.Drawing.Size(100, 23);
-            btnCapturePokemonKey.TabIndex = 9;
-            btnCapturePokemonKey.Text = "Capturar Tecla";
-            btnCapturePokemonKey.UseVisualStyleBackColor = true;
-            btnCapturePokemonKey.Click += btnCapturePokemonKey_Click;
-            // 
-            // btnCaptureReviveKey
-            // 
-            btnCaptureReviveKey.Location = new System.Drawing.Point(188, 72);
-            btnCaptureReviveKey.Name = "btnCaptureReviveKey";
-            btnCaptureReviveKey.Size = new System.Drawing.Size(100, 23);
-            btnCaptureReviveKey.TabIndex = 10;
-            btnCaptureReviveKey.Text = "Capturar Tecla";
-            btnCaptureReviveKey.UseVisualStyleBackColor = true;
-            btnCaptureReviveKey.Click += btnCaptureReviveKey_Click;
-            // 
             // btnSetPosition
             // 
             btnSetPosition.Location = new System.Drawing.Point(6, 112);
@@ -154,6 +134,26 @@
             lblStatus.Size = new System.Drawing.Size(193, 23);
             lblStatus.TabIndex = 8;
             lblStatus.Text = "Status: Pronto";
+            // 
+            // btnCapturePokemonKey
+            // 
+            btnCapturePokemonKey.Location = new System.Drawing.Point(6, 72);
+            btnCapturePokemonKey.Name = "btnCapturePokemonKey";
+            btnCapturePokemonKey.Size = new System.Drawing.Size(100, 23);
+            btnCapturePokemonKey.TabIndex = 9;
+            btnCapturePokemonKey.Text = "Capturar Tecla";
+            btnCapturePokemonKey.UseVisualStyleBackColor = true;
+            btnCapturePokemonKey.Click += btnCapturePokemonKey_Click;
+            // 
+            // btnCaptureReviveKey
+            // 
+            btnCaptureReviveKey.Location = new System.Drawing.Point(188, 72);
+            btnCaptureReviveKey.Name = "btnCaptureReviveKey";
+            btnCaptureReviveKey.Size = new System.Drawing.Size(100, 23);
+            btnCaptureReviveKey.TabIndex = 10;
+            btnCaptureReviveKey.Text = "Capturar Tecla";
+            btnCaptureReviveKey.UseVisualStyleBackColor = true;
+            btnCaptureReviveKey.Click += btnCaptureReviveKey_Click;
             // 
             // grpRevive
             // 
@@ -188,14 +188,25 @@
             grpMedicine.TabStop = false;
             grpMedicine.Text = "Usar Medicina";
             // 
-            // lblMedicineKey
+            // lblMedicineStatus
             // 
-            lblMedicineKey.AutoSize = true;
-            lblMedicineKey.Location = new System.Drawing.Point(6, 25);
-            lblMedicineKey.Name = "lblMedicineKey";
-            lblMedicineKey.Size = new System.Drawing.Size(85, 15);
-            lblMedicineKey.TabIndex = 2;
-            lblMedicineKey.Text = "Atalho Medicina:";
+            lblMedicineStatus.Location = new System.Drawing.Point(155, 112);
+            lblMedicineStatus.Name = "lblMedicineStatus";
+            lblMedicineStatus.Size = new System.Drawing.Size(193, 23);
+            lblMedicineStatus.TabIndex = 8;
+            lblMedicineStatus.Text = "Status: Pronto";
+            lblMedicineStatus.Click += lblMedicineStatus_Click;
+            // 
+            // btnExecuteMedicine
+            // 
+            btnExecuteMedicine.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            btnExecuteMedicine.Location = new System.Drawing.Point(6, 152);
+            btnExecuteMedicine.Name = "btnExecuteMedicine";
+            btnExecuteMedicine.Size = new System.Drawing.Size(342, 33);
+            btnExecuteMedicine.TabIndex = 7;
+            btnExecuteMedicine.Text = "▶️ INICIAR MODO AUTO";
+            btnExecuteMedicine.UseVisualStyleBackColor = true;
+            btnExecuteMedicine.Click += btnExecuteMedicine_Click;
             // 
             // txtMedicineKey
             // 
@@ -216,6 +227,15 @@
             btnCaptureMedicineKey.UseVisualStyleBackColor = true;
             btnCaptureMedicineKey.Click += btnCaptureMedicineKey_Click;
             // 
+            // lblMedicineKey
+            // 
+            lblMedicineKey.AutoSize = true;
+            lblMedicineKey.Location = new System.Drawing.Point(6, 25);
+            lblMedicineKey.Name = "lblMedicineKey";
+            lblMedicineKey.Size = new System.Drawing.Size(97, 15);
+            lblMedicineKey.TabIndex = 2;
+            lblMedicineKey.Text = "Atalho Medicina:";
+            // 
             // btnSetMedicinePosition
             // 
             btnSetMedicinePosition.Location = new System.Drawing.Point(6, 112);
@@ -226,25 +246,6 @@
             btnSetMedicinePosition.UseVisualStyleBackColor = true;
             btnSetMedicinePosition.Click += btnSetMedicinePosition_Click;
             // 
-            // btnExecuteMedicine
-            // 
-            btnExecuteMedicine.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            btnExecuteMedicine.Location = new System.Drawing.Point(6, 152);
-            btnExecuteMedicine.Name = "btnExecuteMedicine";
-            btnExecuteMedicine.Size = new System.Drawing.Size(342, 33);
-            btnExecuteMedicine.TabIndex = 7;
-            btnExecuteMedicine.Text = "▶️ INICIAR MODO AUTO";
-            btnExecuteMedicine.UseVisualStyleBackColor = true;
-            btnExecuteMedicine.Click += btnExecuteMedicine_Click;
-            // 
-            // lblMedicineStatus
-            // 
-            lblMedicineStatus.Location = new System.Drawing.Point(155, 112);
-            lblMedicineStatus.Name = "lblMedicineStatus";
-            lblMedicineStatus.Size = new System.Drawing.Size(193, 23);
-            lblMedicineStatus.TabIndex = 8;
-            lblMedicineStatus.Text = "Status: Pronto";
-            // 
             // Main
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -254,7 +255,6 @@
             Controls.Add(grpRevive);
             Controls.Add(btnRefresh);
             Controls.Add(cmbWindows);
-            Name = "Main";
             Text = "PxG Reviver";
             FormClosing += Main_FormClosing;
             grpRevive.ResumeLayout(false);

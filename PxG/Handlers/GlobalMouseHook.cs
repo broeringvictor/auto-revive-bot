@@ -14,8 +14,8 @@ namespace PxG.Handlers
         private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
 
         // Constantes da API do Windows
-        private const int WH_MOUSE_LL = 14;
-        private const int WM_LBUTTONDOWN = 0x0201; // Clique com o botão esquerdo
+        private const int WhMouseLl = 14;
+        private const int WmLbuttondown = 0x0201; // Clique com o botão esquerdo
 
         // Handle para o nosso hook
         private IntPtr _hookId = IntPtr.Zero;
@@ -45,13 +45,13 @@ namespace PxG.Handlers
             using (Process curProcess = Process.GetCurrentProcess())
             using (ProcessModule curModule = curProcess.MainModule!)
             {
-                return SetWindowsHookEx(WH_MOUSE_LL, proc, GetModuleHandle(curModule.ModuleName!), 0);
+                return SetWindowsHookEx(WhMouseLl, proc, GetModuleHandle(curModule.ModuleName!), 0);
             }
         }
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && wParam == WM_LBUTTONDOWN)
+            if (nCode >= 0 && wParam == WmLbuttondown)
             {
                 // Extrai as coordenadas do clique do mouse
                 MSLLHOOKSTRUCT hookStruct = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT))!;

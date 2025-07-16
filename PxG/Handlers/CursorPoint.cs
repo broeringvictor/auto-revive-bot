@@ -27,10 +27,10 @@ namespace PxG.Handlers
         #region Constantes do Mouse
 
         // Constantes para os eventos do mouse
-        private const uint MOUSEEVENTF_LEFTDOWN = 0x02;
-        private const uint MOUSEEVENTF_LEFTUP = 0x04;
-        private const uint MOUSEEVENTF_RIGHTDOWN = 0x08; 
-        private const uint MOUSEEVENTF_RIGHTUP = 0x10;   
+        private const uint MouseeventfLeftdown = 0x02;
+        private const uint MouseeventfLeftup = 0x04;
+        private const uint MouseeventfRightdown = 0x08; 
+        private const uint MouseeventfRightup = 0x10;   
 
         #endregion
 
@@ -103,9 +103,9 @@ namespace PxG.Handlers
             Thread.Sleep(50); 
 
             // 3. Simula o clique do mouse (botão esquerdo para baixo e para cima).
-            mouse_event(MOUSEEVENTF_LEFTDOWN, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
+            mouse_event(MouseeventfLeftdown, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
             Thread.Sleep(50); // Pausa entre pressionar e soltar.
-            mouse_event(MOUSEEVENTF_LEFTUP, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
+            mouse_event(MouseeventfLeftup, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
         }
 
         /// <summary>
@@ -130,9 +130,9 @@ namespace PxG.Handlers
             Thread.Sleep(50); 
 
             // 3. Simula o clique do mouse (botão esquerdo para baixo e para cima).
-            mouse_event(MOUSEEVENTF_LEFTDOWN, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
+            mouse_event(MouseeventfLeftdown, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
             Thread.Sleep(50); // Pausa entre pressionar e soltar.
-            mouse_event(MOUSEEVENTF_LEFTUP, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
+            mouse_event(MouseeventfLeftup, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
         }
         
         /// <summary>
@@ -152,9 +152,9 @@ namespace PxG.Handlers
             Thread.Sleep(50);
 
             // Simula o clique do mouse (botão direito para baixo e para cima).
-            mouse_event(MOUSEEVENTF_RIGHTDOWN, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
+            mouse_event(MouseeventfRightdown, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
             Thread.Sleep(50);
-            mouse_event(MOUSEEVENTF_RIGHTUP, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
+            mouse_event(MouseeventfRightup, (uint)clientPoint.X, (uint)clientPoint.Y, 0, UIntPtr.Zero);
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace PxG.Handlers
         /// </summary>
         /// <param name="hWnd">O handle da janela</param>
         /// <param name="windowPoint">A posição (X, Y) relativa ao canto superior esquerdo da janela</param>
-        public void MoveMouseToWindowPoint(IntPtr hWnd, System.Drawing.Point windowPoint)
+        public void MoveMouseToWindowPosition(IntPtr hWnd, System.Drawing.Point windowPoint)
         {
             // 1. Converte o ponto relativo da janela para um ponto absoluto na tela.
             Point clientPoint = new Point { X = windowPoint.X, Y = windowPoint.Y };
@@ -175,6 +175,29 @@ namespace PxG.Handlers
             SetCursorPos(clientPoint.X, clientPoint.Y);
         }
 
+        /// <summary>
+        /// Move o mouse para um ponto específico dentro de uma janela e salva a posição anterior para restaurar depois
+        /// </summary>
+        /// <param name="hWnd">Handle da janela</param>
+        /// <param name="windowPoint">Ponto relativo à janela</param>
+        /// <returns>A posição anterior do mouse para poder restaurar depois</returns>
+        public System.Drawing.Point? MoveMouseToWindowPoint(IntPtr hWnd, System.Drawing.Point windowPoint)
+        {
+            // Salva a posição atual do mouse
+            var currentPosition = GetCurrentPosition();
+            
+            // Converte o ponto relativo da janela para coordenadas de tela
+            Point clientPoint = new Point { X = windowPoint.X, Y = windowPoint.Y };
+            if (!ClientToScreen(hWnd, ref clientPoint))
+            {
+                throw new InvalidOperationException("Não foi possível converter as coordenadas da janela para a tela.");
+            }
+
+            // Move o cursor para o ponto na tela
+            SetCursorPos(clientPoint.X, clientPoint.Y);
+            
+            return currentPosition;
+        }
 
     }
 }

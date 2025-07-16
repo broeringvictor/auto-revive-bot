@@ -7,11 +7,11 @@ namespace PxG.Handlers
     /// </summary>
     public class GlobalKeyboardHook : IDisposable
     {
-        private const int WH_KEYBOARD_LL = 13;
-        private const int WM_KEYDOWN = 0x0100;
-        private const int WM_KEYUP = 0x0101;
+        private const int WhKeyboardLl = 13;
+        private const int WmKeydown = 0x0100;
+        private const int WmKeyup = 0x0101;
         private readonly LowLevelKeyboardProc _proc;
-        private IntPtr _hookID = IntPtr.Zero;
+        private IntPtr _hookId;
         private static GlobalKeyboardHook? _instance;
         
         // Eventos para pressionar e soltar teclas
@@ -20,17 +20,37 @@ namespace PxG.Handlers
         
         // Teclas que estamos monitorando
         private readonly HashSet<Keys> _targetKeys = new();
+        
+        // Janela alvo que deve estar ativa para as teclas funcionarem
+        private IntPtr _targetWindow = IntPtr.Zero;
 
         /// <summary>
         /// Obtém o número de teclas que estão sendo monitoradas atualmente
         /// </summary>
         public int TargetKeyCount => _targetKeys.Count;
 
+        /// <summary>
+        /// Define a janela onde as teclas de gatilho devem funcionar
+        /// </summary>
+        /// <param name="windowHandle">Handle da janela do jogo</param>
+        public void SetTargetWindow(IntPtr windowHandle)
+        {
+            _targetWindow = windowHandle;
+        }
+
+        /// <summary>
+        /// Remove a restrição de janela (teclas funcionam globalmente)
+        /// </summary>
+        public void ClearTargetWindow()
+        {
+            _targetWindow = IntPtr.Zero;
+        }
+
         public GlobalKeyboardHook()
         {
             _proc = HookCallback;
             _instance = this;
-            _hookID = SetHook(_proc); // O hook começa a ouvir imediatamente
+            _hookId = SetHook(_proc); // O hook começa a ouvir imediatamente
         }
 
         /// <summary>
@@ -62,8 +82,8 @@ namespace PxG.Handlers
         /// </summary>
         public void Start()
         {
-            if (_hookID == IntPtr.Zero)
-                _hookID = SetHook(_proc);
+            if (_hookId == IntPtr.Zero)
+                _hookId = SetHook(_proc);
         }
 
         /// <summary>
@@ -71,10 +91,10 @@ namespace PxG.Handlers
         /// </summary>
         public void Stop()
         {
-            if (_hookID != IntPtr.Zero)
+            if (_hookId != IntPtr.Zero)
             {
-                UnhookWindowsHookEx(_hookID);
-                _hookID = IntPtr.Zero;
+                UnhookWindowsHookEx(_hookId);
+                _hookId = IntPtr.Zero;
             }
         }
 
@@ -82,7 +102,7 @@ namespace PxG.Handlers
         {
             using var curProcess = System.Diagnostics.Process.GetCurrentProcess();
             using var curModule = curProcess.MainModule;
-            return SetWindowsHookEx(WH_KEYBOARD_LL, proc,
+            return SetWindowsHookEx(WhKeyboardLl, proc,
                 GetModuleHandle(curModule?.ModuleName), 0);
         }
 
@@ -106,19 +126,24 @@ namespace PxG.Handlers
                 // Verifica se a tecla pressionada (com modificadores) é uma das que estamos monitorando
                 if (_instance._targetKeys.Contains(keyWithModifiers))
                 {
-                    if (wParam == (IntPtr)WM_KEYDOWN)
+                    // Verifica se a janela ativa atualmente é a janela do jogo selecionada
+                    IntPtr activeWindow = GetForegroundWindow();
+                    if (_instance._targetWindow != IntPtr.Zero && activeWindow == _instance._targetWindow)
                     {
-                        _instance.KeyDown?.Invoke(_instance, keyWithModifiers);
-                    }
-                    else if (wParam == (IntPtr)WM_KEYUP)
-                    {
-                        _instance.KeyUp?.Invoke(_instance, keyWithModifiers);
+                        if (wParam == (IntPtr)WmKeydown)
+                        {
+                            _instance.KeyDown?.Invoke(_instance, keyWithModifiers);
+                        }
+                        else if (wParam == (IntPtr)WmKeyup)
+                        {
+                            _instance.KeyUp?.Invoke(_instance, keyWithModifiers);
+                        }
                     }
                 }
             }
             
             // Garante que o hook seja passado para o próximo na cadeia
-            return CallNextHookEx(_instance?._hookID ?? IntPtr.Zero, nCode, wParam, lParam);
+            return CallNextHookEx(_instance?._hookId ?? IntPtr.Zero, nCode, wParam, lParam);
         }
 
         public void Dispose()
@@ -151,5 +176,8 @@ namespace PxG.Handlers
         
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(int vKey);
+        
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
     }
 }

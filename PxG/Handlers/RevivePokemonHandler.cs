@@ -24,7 +24,7 @@ namespace PxG.Handlers
             }
 
             // Salva a posição atual do mouse para restaurar depois
-            Point originalMousePosition = _cursorHandler.GetMousePositionInWindow(targetWindowHandle) ?? Point.Empty;
+            var originalMousePosition = _cursorHandler.GetCurrentPosition();
 
             // Etapa 1: Pressionar a tecla do Pokémon.
             // Objetivo: Garantir que o Pokémon esteja na pokébola ou cancelar qualquer ação anterior.
@@ -47,10 +47,10 @@ namespace PxG.Handlers
             KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
             Thread.Sleep(200); 
 
-     
-            if (originalMousePosition != Point.Empty)
+            // Restaura a posição original do mouse
+            if (originalMousePosition.HasValue)
             {
-                _cursorHandler.MoveMouseToWindowPoint(targetWindowHandle, originalMousePosition);
+                _cursorHandler.SetCursorPosition(originalMousePosition.Value);
             }
         }
     }

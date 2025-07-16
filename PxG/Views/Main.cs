@@ -106,7 +106,7 @@ namespace PxG.Views
             if (!string.IsNullOrEmpty(_settings.LastSelectedWindow))
             {
                 var lastWindow = _windowSelector.OpenWindows.Where(w => w.Title == _settings.LastSelectedWindow).FirstOrDefault();
-                // Verifica se encontrou alguma janela comparando com o padrão (Handle = IntPtr.Zero)
+                // Verifica se encontrou alguma janela comparando o Handle
                 if (lastWindow.Handle != IntPtr.Zero)
                 {
                     cmbWindows.SelectedItem = lastWindow;
@@ -524,14 +524,23 @@ namespace PxG.Views
         {
             if (!KeyboardHandler.TryParseKey(keyTextBox.Text, out var hotkey))
             {
-                MessageBox.Show($"A tecla de atalho para '{modeName}' é inv��lida.", "Erro de Configuração");
+                MessageBox.Show($"A tecla de atalho para '{modeName}' é inválida.", "Erro de Configuração");
                 return false;
             }
 
+            // Verifica se uma janela foi selecionada
+            if (cmbWindows.SelectedItem is not WindowInfo selectedWindow)
+            {
+                MessageBox.Show("Por favor, selecione uma janela do jogo antes de ativar o modo automático.", "Janela não selecionada");
+                return false;
+            }
+
+            // Configura a janela alvo no hook de teclado
+            _keyboardHook.SetTargetWindow(selectedWindow.Handle);
             _keyboardHook.AddTargetKey(hotkey);
             _isAutoModeActive = true;
             
-            statusLabel.Text = $"🟢 MODO AUTO ATIVO - Pressione {keyTextBox.Text}";
+            statusLabel.Text = $"🟢 MODO AUTO ATIVO - Pressione {keyTextBox.Text} (apenas na janela do jogo)";
             statusLabel.ForeColor = Color.Green;
             
             return true;
@@ -552,6 +561,8 @@ namespace PxG.Views
             if (_keyboardHook.TargetKeyCount == 0)
             {
                 _isAutoModeActive = false;
+                // Remove a restrição de janela quando não há mais teclas ativas
+                _keyboardHook.ClearTargetWindow();
             }
 
             statusLabel.Text = $"Status: Modo automático ({modeName}) desativado";
@@ -588,7 +599,7 @@ namespace PxG.Views
             _medicineHandler.ExecuteMedicine(selectedWindow.Handle, medicineKey, relativePoint);
             
             this.Invoke(() => {
-                lblMedicineStatus.Text = "💊 Medicina usada!";
+                lblMedicineStatus.Text = "💊 Medicine usada!";
                 lblMedicineStatus.ForeColor = Color.Blue;
                 Task.Delay(1000).ContinueWith(_ => this.Invoke(() => {
                     if (_isAutoModeActive)
@@ -605,6 +616,7 @@ namespace PxG.Views
         {
             // Para todos os modos automáticos
             _keyboardHook.ClearTargetKeys();
+            _keyboardHook.ClearTargetWindow();
             foreach (var cts in _activeTasks.Values)
             {
                 cts.Cancel();
@@ -618,6 +630,45 @@ namespace PxG.Views
             // Dispose dos recursos
             _mouseHook.Dispose();
             _keyboardHook.Dispose();
+        }
+
+        private void lblMedicineStatus_Click(object sender, EventArgs e)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        private void Main_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                // Load saved settings and apply them to the UI
+                LoadSettingsToUI();
+
+                // Refresh the list of open windows
+                _windowSelector.RefreshWindowsList();
+                cmbWindows.DataSource = _windowSelector.OpenWindows;
+
+                // Optionally, set the default selected window if available
+                if (!string.IsNullOrEmpty(_settings.LastSelectedWindow))
+                {
+                    var lastWindow = _windowSelector.OpenWindows
+                        .FirstOrDefault(w => w.Title == _settings.LastSelectedWindow);
+                    // Check if a valid window was found by comparing Handle
+                    if (lastWindow.Handle != IntPtr.Zero)
+                    {
+                        cmbWindows.SelectedItem = lastWindow;
+                    }
+                }
+
+                // Update status labels or other UI elements as needed
+                lblStatus.Text = "Application loaded successfully.";
+                lblStatus.ForeColor = Color.Green;
+            }
+            catch (Exception ex)
+            {
+                // Handle any errors during initialization
+                MessageBox.Show($"An error occurred during initialization: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
