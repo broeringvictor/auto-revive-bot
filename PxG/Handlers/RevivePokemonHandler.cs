@@ -25,13 +25,14 @@ namespace PxG.Handlers
             #region Identificar se o pokemon está desmaiado
             
             // Se estiver desmaiado, não precisamos clicar nele.
-            bool isFainted = ScreenAnalyzer.FindFaintedIcon(pokemonBarPosition, 0.8);
+            bool isFainted = ScreenAnalyzer.FindFaintedIcon(pokemonBarPosition, 0.6);
 
            
             if (!isFainted)
             {
                 KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
-                await Task.Delay(500);
+                await Task.Delay(300);
+                Console.WriteLine("O Pokémon não está desmaiado.");
 
             }
 
@@ -47,11 +48,11 @@ namespace PxG.Handlers
             // Pressiona a tecla do item de reviver para ativar o cursor de alvo.
             KeyboardHandler.SendKey(targetWindowHandle, reviveKey);
             
-            await Task.Delay(200);
+            await Task.Delay(150);
 
             // Clica na posição do Pokémon para usar o item nele.
             _cursorHandler.LeftClickOnWindowPoint(targetWindowHandle, pokemonBarPosition);
-            await Task.Delay(200);
+            await Task.Delay(150);
 
             // Pressiona a tecla do Pokémon novamente para mandá-lo para a batalha.
             KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);

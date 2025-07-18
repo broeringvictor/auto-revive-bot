@@ -578,41 +578,43 @@ namespace PxG.Views
 
             var relativePoint = selectedWindow.ScreenToClient(_revivePosition);
 
-            // Adicione a palavra-chave 'await' aqui na chamada
             await _reviveHandler.ExecuteSmartRevive(selectedWindow.Handle, pokemonKey, reviveKey, relativePoint);
 
-            // Agora, este código só será executado DEPOIS que o revive terminar completamente.
-            this.Invoke(() => {
+            // Atualiza a UI de forma segura após a conclusão
+            if (IsDisposed || !IsHandleCreated) return;
+            Invoke((Action)(async () =>
+            {
                 lblStatus.Text = "⚡ Revive executado!";
                 lblStatus.ForeColor = Color.Blue;
-                Task.Delay(1000).ContinueWith(_ => this.Invoke(() => {
-                    if (_isAutoModeActive)
-                    {
-                        lblStatus.Text = $"🟢 MODO AUTO ATIVO - Pressione {txtReviveKey.Text}";
-                        lblStatus.ForeColor = Color.Green;
-                    }
-                }));
-            });
+                await Task.Delay(1000);
+                if (_isAutoModeActive)
+                {
+                    lblStatus.Text = $"🟢 MODO AUTO ATIVO - Pressione {txtReviveKey.Text}";
+                    lblStatus.ForeColor = Color.Green;
+                }
+            }));
         }
 
-        private void ExecuteAutoMedicine(WindowInfo selectedWindow)
+        private async void ExecuteAutoMedicine(WindowInfo selectedWindow)
         {
             if (!KeyboardHandler.TryParseKey(txtMedicineKey.Text, out var medicineKey)) return;
 
             var relativePoint = selectedWindow.ScreenToClient(_medicinePosition);
-            _medicineHandler.ExecuteMedicine(selectedWindow.Handle, medicineKey, relativePoint);
-            
-            this.Invoke(() => {
-                lblMedicineStatus.Text = "💊 Medicine usada!";
+            await _medicineHandler.ExecuteMedicine(selectedWindow.Handle, medicineKey, relativePoint);
+
+            // Atualiza a UI de forma segura após a conclusão
+            if (IsDisposed || !IsHandleCreated) return;
+            Invoke((Action)(async () =>
+            {
+                lblMedicineStatus.Text = "💊 Medicina usada!";
                 lblMedicineStatus.ForeColor = Color.Blue;
-                Task.Delay(1000).ContinueWith(_ => this.Invoke(() => {
-                    if (_isAutoModeActive)
-                    {
-                        lblMedicineStatus.Text = $"🟢 MODO AUTO ATIVO - Pressione {txtMedicineKey.Text}";
-                        lblMedicineStatus.ForeColor = Color.Green;
-                    }
-                }));
-            });
+                await Task.Delay(1000);
+                if (_isAutoModeActive)
+                {
+                    lblMedicineStatus.Text = $"🟢 MODO AUTO ATIVO - Pressione {txtMedicineKey.Text}";
+                    lblMedicineStatus.ForeColor = Color.Green;
+                }
+            }));
         }
         
         // Garante que o hook seja desativado e as configurações sejam salvas ao fechar o formulário

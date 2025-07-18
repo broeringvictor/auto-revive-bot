@@ -1,3 +1,6 @@
+using System;
+using System.Drawing;
+using System.Threading.Tasks;
 
 namespace PxG.Handlers
 {
@@ -14,7 +17,7 @@ namespace PxG.Handlers
         /// <param name="targetWindowHandle">O handle da janela do jogo.</param>
         /// <param name="medicineKey">A tecla de atalho para o item de medicina.</param>
         /// <param name="pokemonPosition">A posição (X, Y) onde o Pokémon está para receber o clique.</param>
-        public void ExecuteMedicine(IntPtr targetWindowHandle, Keys medicineKey, Point pokemonPosition)
+        public async Task ExecuteMedicine(IntPtr targetWindowHandle, Keys medicineKey, Point pokemonPosition)
         {
             if (targetWindowHandle == IntPtr.Zero)
             {
@@ -27,12 +30,12 @@ namespace PxG.Handlers
             // Etapa 1: Pressionar a tecla do item de medicina.
             // Objetivo: Ativar o item de cura, que pode mudar o cursor.
             KeyboardHandler.SendKey(targetWindowHandle, medicineKey);
-            Thread.Sleep(300); // Atraso para o jogo processar o comando.
+            await Task.Delay(300); // Atraso para o jogo processar o comando.
 
             // Etapa 2: Clicar na posição do Pokémon.
             // Objetivo: Usar o item de cura no Pokémon na posição especificada.
             _cursorHandler.LeftClickOnWindowPoint(targetWindowHandle, pokemonPosition);
-            Thread.Sleep(100); // Pequeno atraso para garantir que o clique foi processado
+            await Task.Delay(100); // Pequeno atraso para garantir que o clique foi processado
 
             // Etapa 3: Restaurar a posição original do mouse
             if (originalMousePosition != Point.Empty)
