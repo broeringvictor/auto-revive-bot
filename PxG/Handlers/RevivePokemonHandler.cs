@@ -1,57 +1,71 @@
-using PxG.Models; 
+using PxG.Models;
+using System.Drawing; // Adicionado para Point
+using System.Threading.Tasks; // Adicionado para usar Task e async/await
 
 namespace PxG.Handlers
 {
-    /// <summary>
-    /// Orquestra a sequência de ações para reviver um Pokémon.
-    /// </summary>
     public class RevivePokemonHandler
     {
         private readonly CursorPoint _cursorHandler = new();
 
         /// <summary>
-        /// Executa a sequência completa para usar um reviver em um Pokémon.
+        /// Executa a sequência inteligente para usar um reviver em um Pokémon.
+        /// Primeiro, verifica se o Pokémon está desmaiado usando análise de imagem.
         /// </summary>
-        /// <param name="targetWindowHandle">O handle da janela do jogo.</param>
-        /// <param name="pokemonKey">A tecla de atalho para selecionar o Pokémon.</param>
-        /// <param name="reviveKey">A tecla de atalho para o item de reviver.</param>
-        /// <param name="pokemonBarPosition">A posição (X, Y) na barra onde o Pokémon está para receber o clique direito.</param>
-        public void ExecuteRevive(IntPtr targetWindowHandle, Keys pokemonKey, Keys reviveKey, System.Drawing.Point pokemonBarPosition)
+        public async Task ExecuteSmartRevive(IntPtr targetWindowHandle, Keys pokemonKey, Keys reviveKey, Point pokemonBarPosition)
         {
             if (targetWindowHandle == IntPtr.Zero)
             {
                 throw new ArgumentException("O handle da janela alvo não pode ser nulo.", nameof(targetWindowHandle));
             }
+            
 
-            // Salva a posição atual do mouse para restaurar depois
+            // 1) verificamos se o ícone de "desmaiado" está realmente presente.
+            // ScreenAnalyzer com uma confiança de 80%.
+            #region Identificar se o pokemon está desmaiado
+            
+            // Se estiver desmaiado, não precisamos clicar nele.
+            bool isFainted = ScreenAnalyzer.FindFaintedIcon(pokemonBarPosition, 0.8);
+
+           
+            if (!isFainted)
+            {
+                KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
+                await Task.Delay(500);
+
+            }
+
+            #endregion
+            
+            // Pega a posição atual do mouse para restaurar depois
             var originalMousePosition = _cursorHandler.GetCurrentPosition();
 
-            // Etapa 1: Pressionar a tecla do Pokémon.
-            // Objetivo: Garantir que o Pokémon esteja na pokébola ou cancelar qualquer ação anterior.
-            // Se o Pokémon estiver fora, ele volta. Se já estiver na pokébola, nada acontece.
-            KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
-            Thread.Sleep(300); // Atraso para o jogo processar o comando.
 
-            // Etapa 2: Pressionar a tecla do item de reviver.
-            // Objetivo: Ativar o item "revive", o que geralmente muda o cursor do mouse.
+
+            #region Segunda etapa: Usar o item de reviver
+
+            // Pressiona a tecla do item de reviver para ativar o cursor de alvo.
             KeyboardHandler.SendKey(targetWindowHandle, reviveKey);
-            Thread.Sleep(500); // Atraso crucial para o jogo registrar a ativação do item e mudar o estado do cursor.
+            
+            await Task.Delay(200);
 
-            // Etapa 3: Clicar na posição do Pokémon na barra.
-            // Objetivo: Usar o item "revive" no Pokémon que está na posição especificada.
+            // Clica na posição do Pokémon para usar o item nele.
             _cursorHandler.LeftClickOnWindowPoint(targetWindowHandle, pokemonBarPosition);
-            Thread.Sleep(200); // Atraso longo para permitir que a animação ou menu de confirmação do jogo apareça.
+            await Task.Delay(200);
 
-            // Etapa 4: Pressionar a tecla do Pokémon novamente.
-            // Objetivo: Confirmar o uso do revive e/ou trazer o Pokémon de volta à batalha.
+            // Pressiona a tecla do Pokémon novamente para mandá-lo para a batalha.
             KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
-            Thread.Sleep(200); 
+            await Task.Delay(200);
 
             // Restaura a posição original do mouse
             if (originalMousePosition.HasValue)
             {
                 _cursorHandler.SetCursorPosition(originalMousePosition.Value);
             }
+            
+
+            #endregion
+
         }
     }
 }

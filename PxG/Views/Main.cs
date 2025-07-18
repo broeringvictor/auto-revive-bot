@@ -569,15 +569,19 @@ namespace PxG.Views
             statusLabel.ForeColor = Color.Orange;
         }
 
-        private void ExecuteAutoRevive(WindowInfo selectedWindow)
+        // Adicione a palavra-chave 'async' na assinatura do método
+        private async void ExecuteAutoRevive(WindowInfo selectedWindow)
         {
             if (!KeyboardHandler.TryParseKey(txtPokemonKey.Text, out var pokemonKey) ||
                 !KeyboardHandler.TryParseKey(txtReviveKey.Text, out var reviveKey))
                 return;
 
             var relativePoint = selectedWindow.ScreenToClient(_revivePosition);
-            _reviveHandler.ExecuteRevive(selectedWindow.Handle, pokemonKey, reviveKey, relativePoint);
 
+            // Adicione a palavra-chave 'await' aqui na chamada
+            await _reviveHandler.ExecuteSmartRevive(selectedWindow.Handle, pokemonKey, reviveKey, relativePoint);
+
+            // Agora, este código só será executado DEPOIS que o revive terminar completamente.
             this.Invoke(() => {
                 lblStatus.Text = "⚡ Revive executado!";
                 lblStatus.ForeColor = Color.Blue;
