@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <UseWindowsForms>true</UseWindowsForms>
         <ImplicitUsings>enable</ImplicitUsings>
+        <ApplicationIcon>Assets\icone.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,12 +15,24 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Assets\pokebola.png">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
       <None Update="Assets\poketeste.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <None Update="Assets\icon.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Assets\pokebola_ico.ico">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Assets\icone.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Assets\file_ico_format_type_icon_134725.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
+    <PropertyGroup>
+        <NoWarn>$(NoWarn);WFO5001</NoWarn>
+    </PropertyGroup>
 
 </Project>

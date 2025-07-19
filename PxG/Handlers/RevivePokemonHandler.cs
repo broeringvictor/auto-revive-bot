@@ -68,5 +68,61 @@ namespace PxG.Handlers
             #endregion
 
         }
+                public async Task ExecuteFastRevive(IntPtr targetWindowHandle, Keys pokemonKey, Keys reviveKey, Point pokemonBarPosition)
+        {
+            if (targetWindowHandle == IntPtr.Zero)
+            {
+                throw new ArgumentException("O handle da janela alvo não pode ser nulo.", nameof(targetWindowHandle));
+            }
+            
+
+            // 1) verificamos se o ícone de "desmaiado" está realmente presente.
+            // ScreenAnalyzer com uma confiança de 80%.
+            #region Identificar se o pokemon está desmaiado
+            
+            // Se estiver desmaiado, não precisamos clicar nele.
+            bool isFainted = ScreenAnalyzer.FindFaintedIcon(pokemonBarPosition, 0.6);
+
+           
+            if (!isFainted)
+            {
+                KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
+                Thread.Sleep(200);
+                Console.WriteLine("O Pokémon não está desmaiado.");
+
+            }
+
+            #endregion
+            
+            // Pega a posição atual do mouse para restaurar depois
+            var originalMousePosition = _cursorHandler.GetCurrentPosition();
+
+
+
+            #region Segunda etapa: Usar o item de reviver
+
+            // Pressiona a tecla do item de reviver para ativar o cursor de alvo.
+            
+            
+            await Task.Delay(120);
+
+
+            _cursorHandler.SetCursorPosition(pokemonBarPosition);
+            await Task.Delay(100);
+            KeyboardHandler.SendKey(targetWindowHandle, reviveKey);
+            KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
+
+
+
+            // Restaura a posição original do mouse
+            if (originalMousePosition.HasValue)
+            {
+                _cursorHandler.SetCursorPosition(originalMousePosition.Value);
+            }
+            
+
+            #endregion
+
+        }
     }
 }
