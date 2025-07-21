@@ -7,21 +7,21 @@ namespace PxG.Handlers
 {
     public class GlobalMouseHook : IDisposable
     {
-        // Evento genérico para qualquer ação do mouse
+        
         public event EventHandler<GlobalMouseEventArgs>? MouseEvent;
 
         private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
 
-        // Constantes da API do Windows para eventos do mouse
-        private const int WH_MOUSE_LL = 14;
-        private const int WM_LBUTTONDOWN = 0x0201;
-        private const int WM_LBUTTONUP = 0x0202;
-        private const int WM_XBUTTONDOWN = 0x020B;
-        private const int WM_XBUTTONUP = 0x020C;
+        
+        private const int WhMouseLl = 14;
+        private const int WmLbuttondown = 0x0201;
+        private const int WmLbuttonup = 0x0202;
+        private const int WmXbuttondown = 0x020B;
+        private const int WmXbuttonup = 0x020C;
         
         // Constantes para identificar os botões extras
-        private const int XBUTTON1 = 0x0001;
-        private const int XBUTTON2 = 0x0002;
+        private const int Xbutton1 = 0x0001;
+        private const int Xbutton2 = 0x0002;
 
         private IntPtr _hookId = IntPtr.Zero;
         private readonly LowLevelMouseProc _proc;
@@ -49,7 +49,7 @@ namespace PxG.Handlers
             using (Process curProcess = Process.GetCurrentProcess())
             using (ProcessModule curModule = curProcess.MainModule!)
             {
-                return SetWindowsHookEx(WH_MOUSE_LL, proc, GetModuleHandle(curModule.ModuleName!), 0);
+                return SetWindowsHookEx(WhMouseLl, proc, GetModuleHandle(curModule.ModuleName!), 0);
             }
         }
 
@@ -57,22 +57,22 @@ namespace PxG.Handlers
         {
             if (nCode >= 0)
             {
-                MSLLHOOKSTRUCT hookStruct = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT))!;
+                Msllhookstruct hookStruct = (Msllhookstruct)Marshal.PtrToStructure(lParam, typeof(Msllhookstruct))!;
                 MouseAction action = MouseAction.None;
                 MouseButton button = MouseButton.None;
 
                 int msg = wParam.ToInt32();
 
-                if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONUP)
+                if (msg == WmLbuttondown || msg == WmLbuttonup)
                 {
-                    action = (msg == WM_LBUTTONDOWN) ? MouseAction.Down : MouseAction.Up;
+                    action = (msg == WmLbuttondown) ? MouseAction.Down : MouseAction.Up;
                     button = MouseButton.Left;
                 }
-                else if (msg == WM_XBUTTONDOWN || msg == WM_XBUTTONUP)
+                else if (msg == WmXbuttondown || msg == WmXbuttonup)
                 {
-                    action = (msg == WM_XBUTTONDOWN) ? MouseAction.Down : MouseAction.Up;
+                    action = (msg == WmXbuttondown) ? MouseAction.Down : MouseAction.Up;
                     int xButton = (int)(hookStruct.mouseData >> 16);
-                    button = (xButton == XBUTTON1) ? MouseButton.XButton1 : MouseButton.XButton2;
+                    button = (xButton == Xbutton1) ? MouseButton.XButton1 : MouseButton.XButton2;
                 }
 
                 if (action != MouseAction.None)
@@ -94,7 +94,7 @@ namespace PxG.Handlers
         public struct Point { public int X; public int Y; }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct MSLLHOOKSTRUCT
+        private struct Msllhookstruct
         {
             public Point pt;
             public uint mouseData;

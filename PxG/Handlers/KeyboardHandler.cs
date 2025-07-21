@@ -4,17 +4,16 @@ namespace PxG.Handlers
 {
     public static class KeyboardHandler
     {
-        // Constantes da API do Windows
-        private const uint WM_KEYDOWN = 0x0100;
-        private const uint WM_KEYUP = 0x0101;
-        private const uint MAPVK_VK_TO_VSC = 0x00; // Mapeia uma tecla virtual para um scan code
+        private const uint WmKeydown = 0x0100;
+        private const uint WmKeyup = 0x0101;
+        private const uint MapvkVkToVsc = 0x00; 
 
         #region P/Invoke para Funções da API
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+        private static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
-        // NOVA FUNÇÃO: Mapeia o código de uma tecla virtual para um código de varredura (scan code)
+        
         [DllImport("user32.dll")]
         private static extern uint MapVirtualKey(uint uCode, uint uMapType);
 
@@ -29,31 +28,16 @@ namespace PxG.Handlers
         public static void SendKey(IntPtr hWnd, Keys key)
         {
             if (hWnd == IntPtr.Zero) return;
-
-            // 1. Obter o Scan Code da tecla virtual
-            uint scanCode = MapVirtualKey((uint)key, MAPVK_VK_TO_VSC);
-
-            // 2. Construir o parâmetro lParam para o evento KEYDOWN
-            // Formato: (1 | (scanCode << 16))
-            // Bit 0: Repeat count (1 para uma única pressão)
-            // Bits 16-23: Scan code
+            uint scanCode = MapVirtualKey((uint)key, MapvkVkToVsc);
             IntPtr lParamDown = (IntPtr)((scanCode << 16) | 1);
-            
-            // 3. Construir o parâmetro lParam para o evento KEYUP
-            // Formato: (1 | (scanCode << 16) | (1 << 30) | (1 << 31))
-            // Bit 30: Previous key state (1 para indicar que a tecla estava pressionada)
-            // Bit 31: Transition state (1 para indicar que a tecla está sendo solta)
             IntPtr lParamUp = (IntPtr)((scanCode << 16) | 0xC0000001);
-
-            // 4. Enviar as mensagens com os parâmetros corretos
-            PostMessage(hWnd, WM_KEYDOWN, (IntPtr)key, lParamDown);
-            Thread.Sleep(120); // Pausa recomendada entre pressionar e soltar
-            PostMessage(hWnd, WM_KEYUP, (IntPtr)key, lParamUp);
+            PostMessage(hWnd, WmKeydown, (IntPtr)key, lParamDown);
+            Thread.Sleep(120);
+            PostMessage(hWnd, WmKeyup, (IntPtr)key, lParamUp);
         }
 
         /// <summary>
-        /// Converte uma string de tecla para o enum Keys de forma mais robusta.
-        /// Suporta diferentes formatos de entrada do usuário, incluindo combinações com modificadores.
+        /// Converte uma string de tecla para o enum Keys, incluindo combinações com modificadores.
         /// </summary>
         /// <param name="keyText">Texto da tecla inserido pelo usuário (ex: "Shift+F1", "Ctrl+A")</param>
         /// <param name="key">A tecla convertida (saída)</param>
@@ -67,14 +51,13 @@ namespace PxG.Handlers
 
             // Limpa e normaliza a entrada
             keyText = keyText.Trim().ToUpperInvariant();
-
             // Se contém modificadores (ex: "SHIFT+F1")
             if (keyText.Contains("+"))
             {
                 var parts = keyText.Split('+');
                 if (parts.Length < 2) return false;
 
-                // A última parte é sempre a tecla principal
+                // A última parte é a tecla principal
                 string mainKeyText = parts[^1];
                 
                 // Converte a tecla principal
@@ -154,11 +137,9 @@ namespace PxG.Handlers
                 {"INSERIR", Keys.Insert}, {"DELETAR", Keys.Delete}, {"INICIO", Keys.Home}, {"FIM", Keys.End}
             };
 
-            // Primeiro tenta o mapeamento customizado
+
             if (keyMappings.TryGetValue(keyText, out key))
                 return true;
-
-            // Depois tenta a conversão direta (para casos não cobertos pelo mapeamento)
             if (Enum.TryParse(keyText, true, out key))
                 return true;
 

@@ -289,10 +289,10 @@ namespace PxG.Views
             {
                 _isCapturingExecuteKey = false;
                 txtExecuteKey.Text = keyName;
-                btnCaptureExecuteKey.Text = "Capturar Tecla Execução";
+                btnCaptureExecuteKey.Text = @"Capturar Tecla Execução";
                 btnCaptureExecuteKey.BackColor = SystemColors.Control;
                 btnCaptureExecuteKey.Enabled = true;
-                lblStatus.Text = $"✓ Tecla Execução capturada: {keyName}";
+                lblStatus.Text = @"✓ Tecla Execução capturada: {keyName}";
                 lblStatus.ForeColor = Color.Green;
                 SaveCurrentSettings();
             }
@@ -305,7 +305,7 @@ namespace PxG.Views
             if (e.KeyCode == Keys.Escape && (_isCapturingPokemonKey || _isCapturingReviveKey || _isCapturingExecuteKey))
             {
                 CancelAllCaptures();
-                lblStatus.Text = "Status: Captura cancelada";
+                lblStatus.Text = @"Status: Captura cancelada";
                 lblStatus.ForeColor = Color.Orange;
                 e.Handled = true;
                 return;
@@ -324,10 +324,10 @@ namespace PxG.Views
                 _isCapturingPokemonKey = false;
                 string keyCombo = GetKeyComboString(e);
                 txtPokemonKey.Text = keyCombo;
-                btnCapturePokemonKey.Text = "Capturar Tecla Pokémon";
+                btnCapturePokemonKey.Text = @"Capturar Tecla Pokémon";
                 btnCapturePokemonKey.BackColor = SystemColors.Control;
                 btnCapturePokemonKey.Enabled = true;
-                lblStatus.Text = $"✓ Tecla Pokémon capturada: {keyCombo}";
+                lblStatus.Text = @"✓ Tecla Pokémon capturada: {keyCombo}";
                 lblStatus.ForeColor = Color.Green;
                 e.Handled = true;
                 SaveCurrentSettings();
@@ -338,10 +338,10 @@ namespace PxG.Views
                 _isCapturingReviveKey = false;
                 string keyCombo = GetKeyComboString(e);
                 txtReviveKey.Text = keyCombo;
-                btnCaptureReviveKey.Text = "Capturar Tecla Revive";
+                btnCaptureReviveKey.Text = @"Capturar Tecla Revive";
                 btnCaptureReviveKey.BackColor = SystemColors.Control;
                 btnCaptureReviveKey.Enabled = true;
-                lblStatus.Text = $"✓ Tecla Revive capturada: {keyCombo}";
+                lblStatus.Text = @"✓ Tecla Revive capturada: {keyCombo}";
                 lblStatus.ForeColor = Color.Green;
                 e.Handled = true;
                 SaveCurrentSettings();
@@ -381,7 +381,7 @@ namespace PxG.Views
             {
                 if (StartAutoMode(keyTextBox, statusLabel, modeName))
                 {
-                    button.Text = $"🔴 PARAR MODO AUTO ({modeName})";
+                    button.Text = @"🔴 PARAR MODO AUTO ({modeName})";
                     button.BackColor = Color.Red;
                     button.ForeColor = Color.White;
                 }
@@ -389,7 +389,7 @@ namespace PxG.Views
             else
             {
                 StopAutoMode(keyTextBox, statusLabel, modeName);
-                button.Text = $"▶️ INICIAR MODO AUTO ({modeName})";
+                button.Text = @"▶️ INICIAR MODO AUTO ({modeName})";
                 button.BackColor = SystemColors.Control;
                 button.ForeColor = SystemColors.ControlText;
             }
@@ -399,19 +399,23 @@ namespace PxG.Views
         {
             if (!_isAutoModeActive || _activeTasks.ContainsKey(pressedKey)) return;
             if (cmbWindows.SelectedItem is not WindowInfo selectedWindow) return;
-            CancellationTokenSource cts = new CancellationTokenSource();
-            _activeTasks[pressedKey] = cts;
-            Task.Run(async () =>
+
+            // CORREÇÃO: Verificar se a tecla pressionada é a tecla de EXECUÇÃO
+            if (txtExecuteKey.Text.Equals(pressedKey.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                (KeyboardHandler.TryParseKey(txtExecuteKey.Text, out var executeKey) && pressedKey == executeKey))
             {
-                while (!cts.Token.IsCancellationRequested)
+                CancellationTokenSource cts = new CancellationTokenSource();
+                _activeTasks[pressedKey] = cts;
+
+                Task.Run(async () =>
                 {
-                    if (KeyboardHandler.TryParseKey(txtReviveKey.Text, out var reviveKey) && pressedKey == reviveKey)
+                    while (!cts.Token.IsCancellationRequested)
                     {
                         await ExecuteAutoRevive(selectedWindow);
+                        await Task.Delay(500, cts.Token); // Pequeno delay para evitar sobrecarga
                     }
-                    await Task.Delay(500, cts.Token);
-                }
-            }, cts.Token);
+                }, cts.Token);
+            }
         }
 
         private void OnGlobalKeyUp(object? sender, Keys releasedKey)
@@ -427,19 +431,19 @@ namespace PxG.Views
         {
             if (!KeyboardHandler.TryParseKey(keyTextBox.Text, out var hotkey))
             {
-                MessageBox.Show($"A tecla de atalho para '{modeName}' é inválida.", "Erro de Configuração");
+                MessageBox.Show(@"A tecla de atalho para '{modeName}' é inválida.", @"Erro de Configuração");
                 return false;
             }
             if (cmbWindows.SelectedItem is not WindowInfo selectedWindow)
             {
-                MessageBox.Show("Por favor, selecione uma janela do jogo antes de ativar o modo automático.", "Janela não selecionada");
+                MessageBox.Show(@"Por favor, selecione uma janela do jogo antes de ativar o modo automático.", @"Janela não selecionada");
                 return false;
             }
             _keyboardHook.SetTargetWindow(selectedWindow.Handle);
             _keyboardHook.AddTargetKey(hotkey);
             _mouseHook.Start(); // ATIVA O HOOK DO MOUSE
             _isAutoModeActive = true;
-            statusLabel.Text = $"🟢 MODO AUTO ATIVO - Pressione {keyTextBox.Text} (apenas na janela do jogo)";
+            statusLabel.Text = @"🟢 MODO AUTO ATIVO - Pressione {keyTextBox.Text} (apenas na janela do jogo)";
             statusLabel.ForeColor = Color.Green;
             return true;
         }
@@ -470,7 +474,7 @@ namespace PxG.Views
                 _keyboardHook.ClearTargetWindow();
                 _mouseHook.Stop(); // DESATIVA O HOOK DO MOUSE
             }
-            statusLabel.Text = $"Status: Modo automático ({modeName}) desativado";
+            statusLabel.Text = @"Status: Modo automático ({modeName}) desativado";
             statusLabel.ForeColor = Color.Orange;
         }
 
@@ -487,12 +491,12 @@ namespace PxG.Views
             if (IsDisposed || !IsHandleCreated) return;
             Invoke((Action)(async () =>
             {
-                lblStatus.Text = "⚡ Revive executado!";
+                lblStatus.Text = @"⚡ Revive executado!";
                 lblStatus.ForeColor = Color.Blue;
                 await Task.Delay(1000);
                 if (_isAutoModeActive)
                 {
-                    lblStatus.Text = $"🟢 MODO AUTO ATIVO";
+                    lblStatus.Text = @"🟢 MODO AUTO ATIVO";
                     lblStatus.ForeColor = Color.Green;
                 }
             }));

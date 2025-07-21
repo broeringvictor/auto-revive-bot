@@ -15,7 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Assets\poketeste.png">
+      <None Update="Assets\pokemon-desmaiado.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
       <None Update="Assets\icon.png">

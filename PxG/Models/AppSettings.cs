@@ -5,7 +5,6 @@ namespace PxG.Models
         public string PokemonKey { get; set; } = "";
         public string ReviveKey { get; set; } = "";
         public string ExecuteKey { get; set; } = "";
-        public string MedicineKey { get; set; } = "";
         public int RevivePositionX { get; set; } = 0;
         public int RevivePositionY { get; set; } = 0;
         public int MedicinePositionX { get; set; } = 0;

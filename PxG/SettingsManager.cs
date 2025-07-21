@@ -24,7 +24,7 @@ namespace PxG
             catch (Exception ex)
             {
                 // Log error if needed
-                Console.WriteLine($"Erro ao carregar configurações: {ex.Message}");
+                Console.WriteLine($@"Erro ao carregar configurações: {ex.Message}");
             }
 
             return new AppSettings();
@@ -51,7 +51,7 @@ namespace PxG
             catch (Exception ex)
             {
                 // Log error if needed
-                Console.WriteLine($"Erro ao salvar configurações: {ex.Message}");
+                Console.WriteLine($@"Erro ao salvar configurações: {ex.Message}");
                 return false;
             }
         }
