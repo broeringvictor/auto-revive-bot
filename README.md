@@ -10,7 +10,7 @@ O principal objetivo deste projeto foi explorar técnicas de **automação de ta
 
 ---
 
-## Motivation
+## Motivação
 
 A construção deste programa foi motivada pelo desejo de aprender e aplicar na prática os seguintes conceitos:
 
