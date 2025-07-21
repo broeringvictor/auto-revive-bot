@@ -13,6 +13,8 @@ namespace PxG.Views
             base.Dispose(disposing);
         }
 
+        #region Windows Form Designer generated code
+
         /// <summary>
         /// Required method for Designer support - do not modify
         /// the contents of this method with the code editor.
@@ -20,7 +22,8 @@ namespace PxG.Views
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ReviveView));
-            btnExecuteRevive = new System.Windows.Forms.Button();
+            // Renomeado para maior clareza e consistência com a lógica refatorada.
+            btnToggleAutoMode = new System.Windows.Forms.Button(); 
             groupBoxWindow = new System.Windows.Forms.GroupBox();
             cmbWindows = new System.Windows.Forms.ComboBox();
             btnRefresh = new System.Windows.Forms.Button();
@@ -42,17 +45,17 @@ namespace PxG.Views
             groupBoxPosition.SuspendLayout();
             SuspendLayout();
             // 
-            // btnExecuteRevive
+            // btnToggleAutoMode
             // 
-            btnExecuteRevive.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)0));
-            btnExecuteRevive.Location = new System.Drawing.Point(14, 427);
-            btnExecuteRevive.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            btnExecuteRevive.Name = "btnExecuteRevive";
-            btnExecuteRevive.Size = new System.Drawing.Size(398, 46);
-            btnExecuteRevive.TabIndex = 8;
-            btnExecuteRevive.Text = "▶️ INICIAR MODO AUTO (Revive)";
-            btnExecuteRevive.UseVisualStyleBackColor = true;
-            btnExecuteRevive.Click += btnExecuteRevive_Click;
+            btnToggleAutoMode.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)0));
+            btnToggleAutoMode.Location = new System.Drawing.Point(14, 427);
+            btnToggleAutoMode.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            btnToggleAutoMode.Name = "btnToggleAutoMode";
+            btnToggleAutoMode.Size = new System.Drawing.Size(398, 46);
+            btnToggleAutoMode.TabIndex = 8;
+            btnToggleAutoMode.Text = "▶️ INICIAR MODO AUTO"; // O texto será atualizado pela lógica
+            btnToggleAutoMode.UseVisualStyleBackColor = true;
+            btnToggleAutoMode.Click += btnToggleAutoMode_Click; // Evento agora corresponde ao nome do botão
             // 
             // groupBoxWindow
             // 
@@ -134,7 +137,7 @@ namespace PxG.Views
             btnCapturePokemonKey.Name = "btnCapturePokemonKey";
             btnCapturePokemonKey.Size = new System.Drawing.Size(194, 27);
             btnCapturePokemonKey.TabIndex = 5;
-            btnCapturePokemonKey.Text = "Capturar Tecla";
+            btnCapturePokemonKey.Text = "Capturar Tecla Pokémon";
             btnCapturePokemonKey.UseVisualStyleBackColor = true;
             btnCapturePokemonKey.Click += btnCapturePokemonKey_Click;
             // 
@@ -164,7 +167,7 @@ namespace PxG.Views
             btnCaptureReviveKey.Name = "btnCaptureReviveKey";
             btnCaptureReviveKey.Size = new System.Drawing.Size(194, 27);
             btnCaptureReviveKey.TabIndex = 7;
-            btnCaptureReviveKey.Text = "Capturar Tecla";
+            btnCaptureReviveKey.Text = "Capturar Tecla Revive";
             btnCaptureReviveKey.UseVisualStyleBackColor = true;
             btnCaptureReviveKey.Click += btnCaptureReviveKey_Click;
             // 
@@ -194,7 +197,7 @@ namespace PxG.Views
             btnCaptureExecuteKey.Name = "btnCaptureExecuteKey";
             btnCaptureExecuteKey.Size = new System.Drawing.Size(194, 27);
             btnCaptureExecuteKey.TabIndex = 9;
-            btnCaptureExecuteKey.Text = "Capturar Tecla";
+            btnCaptureExecuteKey.Text = "Capturar Tecla Execução";
             btnCaptureExecuteKey.UseVisualStyleBackColor = true;
             btnCaptureExecuteKey.Click += btnCaptureExecuteKey_Click;
             // 
@@ -223,13 +226,14 @@ namespace PxG.Views
             // 
             // lblStatus
             // 
-            lblStatus.AutoSize = true;
-            lblStatus.Location = new System.Drawing.Point(18, 398);
+            lblStatus.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            lblStatus.Location = new System.Drawing.Point(14, 380);
             lblStatus.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new System.Drawing.Size(42, 15);
+            lblStatus.Size = new System.Drawing.Size(398, 35);
             lblStatus.TabIndex = 3;
-            lblStatus.Text = "Status:";
+            lblStatus.Text = "Status: Ocioso";
+            lblStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // ReviveView
             // 
@@ -239,7 +243,7 @@ namespace PxG.Views
             Controls.Add(groupBoxPosition);
             Controls.Add(groupBoxKeys);
             Controls.Add(groupBoxWindow);
-            Controls.Add(btnExecuteRevive);
+            Controls.Add(btnToggleAutoMode); // Renomeado aqui também
             Controls.Add(lblStatus);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             Icon = ((System.Drawing.Icon)resources.GetObject("$this.Icon"));
@@ -255,8 +259,11 @@ namespace PxG.Views
             PerformLayout();
         }
 
+        #endregion
+
+        // As declarações dos controles
         private System.Windows.Forms.Label lblStatus;
-        private System.Windows.Forms.Button btnExecuteRevive;
+        private System.Windows.Forms.Button btnToggleAutoMode; // Renomeado
         private System.Windows.Forms.GroupBox groupBoxWindow;
         private System.Windows.Forms.ComboBox cmbWindows;
         private System.Windows.Forms.Button btnRefresh;
