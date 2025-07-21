@@ -84,4 +84,3 @@ O código está organizado nos seguintes diretórios e classes principais:
 
 ---
 
-Este projeto é estritamente para fins educacionais e não deve ser usado para obter vantagens injustas em jogos online.
