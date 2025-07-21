@@ -4,7 +4,8 @@
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=5e48de0b_002D878b_002D4b8d_002Db64a_002D859338b32509/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;Solution /&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/Highlighting/HighlightingSourceSnapshotLocation/@EntryValue">C:\Users\User\AppData\Local\Temp\JetBrains\Rider\vAny\CoverageData\_PxG.-1715477418\Snapshot\snapshot.utdcvr</s:String>
-	<s:Boolean x:Key="/Default/ResxEditorPersonal/CheckedGroups/=PxG_002FViews_002FReviveView/@EntryIndexedValue">True</s:Boolean>
+	
+	<s:Boolean x:Key="/Default/ResxEditorPersonal/CheckedGroups/=PxG_002FViews_002FReviveView/@EntryIndexedValue">False</s:Boolean>
+	<s:Boolean x:Key="/Default/ResxEditorPersonal/CheckedGroups/=PxG_002FViews_002FReviveView/@EntryIndexRemoved">True</s:Boolean>
 	
 	<s:Boolean x:Key="/Default/ResxEditorPersonal/Initialized/@EntryValue">True</s:Boolean></wpf:ResourceDictionary>
