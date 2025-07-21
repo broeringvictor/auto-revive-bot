@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PxG/PxG.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+</Solution>
