@@ -81,6 +81,7 @@ namespace PxG.Services
 
             _keyboardHook.ClearTargetKeys();
             _keyboardHook.ClearTargetWindow();
+            _keyboardHook.Stop();
             _mouseHook.Stop();
             IsRunning = false;
             _targetWindowHandle = IntPtr.Zero; 
