@@ -10,6 +10,7 @@ namespace PxG.Views
             {
                 components.Dispose();
             }
+
             base.Dispose(disposing);
         }
 
@@ -22,8 +23,7 @@ namespace PxG.Views
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ReviveView));
-            // Renomeado para maior clareza e consistência com a lógica refatorada.
-            btnToggleAutoMode = new System.Windows.Forms.Button(); 
+            btnToggleAutoMode = new System.Windows.Forms.Button();
             groupBoxWindow = new System.Windows.Forms.GroupBox();
             cmbWindows = new System.Windows.Forms.ComboBox();
             btnRefresh = new System.Windows.Forms.Button();
@@ -38,6 +38,7 @@ namespace PxG.Views
             txtExecuteKey = new System.Windows.Forms.TextBox();
             btnCaptureExecuteKey = new System.Windows.Forms.Button();
             groupBoxPosition = new System.Windows.Forms.GroupBox();
+            button1 = new System.Windows.Forms.Button();
             btnSetPosition = new System.Windows.Forms.Button();
             lblStatus = new System.Windows.Forms.Label();
             groupBoxWindow.SuspendLayout();
@@ -53,9 +54,9 @@ namespace PxG.Views
             btnToggleAutoMode.Name = "btnToggleAutoMode";
             btnToggleAutoMode.Size = new System.Drawing.Size(398, 46);
             btnToggleAutoMode.TabIndex = 8;
-            btnToggleAutoMode.Text = "▶️ INICIAR MODO AUTO"; // O texto será atualizado pela lógica
+            btnToggleAutoMode.Text = "▶️ INICIAR MODO AUTO";
             btnToggleAutoMode.UseVisualStyleBackColor = true;
-            btnToggleAutoMode.Click += btnToggleAutoMode_Click; // Evento agora corresponde ao nome do botão
+            btnToggleAutoMode.Click += btnToggleAutoMode_Click;
             // 
             // groupBoxWindow
             // 
@@ -203,15 +204,26 @@ namespace PxG.Views
             // 
             // groupBoxPosition
             // 
+            groupBoxPosition.Controls.Add(button1);
             groupBoxPosition.Controls.Add(btnSetPosition);
             groupBoxPosition.Location = new System.Drawing.Point(14, 287);
             groupBoxPosition.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             groupBoxPosition.Name = "groupBoxPosition";
             groupBoxPosition.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            groupBoxPosition.Size = new System.Drawing.Size(398, 81);
+            groupBoxPosition.Size = new System.Drawing.Size(398, 101);
             groupBoxPosition.TabIndex = 11;
             groupBoxPosition.TabStop = false;
             groupBoxPosition.Text = "3. Defina a Posição do Pokémon";
+            // 
+            // button1
+            // 
+            button1.Location = new System.Drawing.Point(10, 70);
+            button1.Name = "button1";
+            button1.Size = new System.Drawing.Size(79, 20);
+            button1.TabIndex = 12;
+            button1.Text = "Teste";
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
             // 
             // btnSetPosition
             // 
@@ -243,7 +255,7 @@ namespace PxG.Views
             Controls.Add(groupBoxPosition);
             Controls.Add(groupBoxKeys);
             Controls.Add(groupBoxWindow);
-            Controls.Add(btnToggleAutoMode); // Renomeado aqui também
+            Controls.Add(btnToggleAutoMode);
             Controls.Add(lblStatus);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             Icon = ((System.Drawing.Icon)resources.GetObject("$this.Icon"));
@@ -256,14 +268,15 @@ namespace PxG.Views
             groupBoxKeys.PerformLayout();
             groupBoxPosition.ResumeLayout(false);
             ResumeLayout(false);
-            PerformLayout();
         }
+
+        private System.Windows.Forms.Button button1;
 
         #endregion
 
         // As declarações dos controles
         private System.Windows.Forms.Label lblStatus;
-        private System.Windows.Forms.Button btnToggleAutoMode; // Renomeado
+        private System.Windows.Forms.Button btnToggleAutoMode;
         private System.Windows.Forms.GroupBox groupBoxWindow;
         private System.Windows.Forms.ComboBox cmbWindows;
         private System.Windows.Forms.Button btnRefresh;

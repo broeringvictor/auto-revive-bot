@@ -1,7 +1,7 @@
 using PxG.Handlers;
 using PxG.Models;
 using PxG.Services; 
-
+using System.Diagnostics; // Adicionado para Stopwatch
 
 namespace PxG.Views
 {
@@ -36,11 +36,11 @@ namespace PxG.Views
 
             this.KeyPreview = true;
             this.KeyDown += OnFormKeyDown;
-            LoadSettingsToUI();
+            LoadSettingsToUi();
         }
 
         #region UI Loading and Settings
-        private void LoadSettingsToUI()
+        private void LoadSettingsToUi()
         {
             txtPokemonKey.Text = _settings.PokemonKey;
             txtReviveKey.Text = _settings.ReviveKey;
@@ -54,7 +54,6 @@ namespace PxG.Views
                 var lastWindow = cmbWindows.Items.OfType<WindowInfo>()
                     .FirstOrDefault(w => w.Title == _settings.LastSelectedWindow);
 
-                // Verifique se o Handle da janela é válido, em vez de checar se o objeto é nulo.
                 if (lastWindow.Handle != IntPtr.Zero)
                 {
                     cmbWindows.SelectedItem = lastWindow;
@@ -213,35 +212,37 @@ namespace PxG.Views
 
         private void btnToggleAutoMode_Click(object sender, EventArgs e)
         {
+            btnToggleAutoMode.Enabled = false;
+
             if (_autoReviveService.IsRunning)
             {
                 _autoReviveService.Stop();
             }
             else
             {
-                if (cmbWindows.SelectedItem is WindowInfo selectedWindow)
+                if (cmbWindows.SelectedItem is WindowInfo selectedWindow && selectedWindow.Handle != IntPtr.Zero)
                 {
-                    SaveCurrentSettings(); // Salva antes de iniciar
+                    SaveCurrentSettings();
                     _autoReviveService.Start(_settings, selectedWindow.Handle);
                 }
                 else
                 {
-                    MessageBox.Show("Por favor, selecione uma janela antes de iniciar.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Por favor, selecione uma janela válida antes de iniciar.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    btnToggleAutoMode.Enabled = true; // Reabilita se a janela for inválida
                 }
             }
         }
-        
+
         private void OnServiceStatusUpdated(string message, Color color)
         {
             if (this.IsDisposed || !this.IsHandleCreated) return;
 
-            // Garante que a atualização da UI ocorra na thread principal
             this.Invoke(() => {
                 UpdateStatus(message, color);
 
-                // Atualiza o estado visual do botão principal
                 btnToggleAutoMode.Text = _autoReviveService.IsRunning ? "🔴 PARAR MODO AUTO" : "▶️ INICIAR MODO AUTO";
                 btnToggleAutoMode.BackColor = _autoReviveService.IsRunning ? Color.Tomato : SystemColors.Control;
+                btnToggleAutoMode.Enabled = true; // Reabilita o botão após a conclusão da operação
             });
         }
         #endregion
@@ -288,8 +289,8 @@ namespace PxG.Views
             // (Método mantido como estava, pois já era bom)
             var modifiers = new List<string>();
             if (e.Control) modifiers.Add("Ctrl");
-if (e.Alt) modifiers.Add("Alt");
-if (e.Shift) modifiers.Add("Shift");
+            if (e.Alt) modifiers.Add("Alt");
+            if (e.Shift) modifiers.Add("Shift");
             Keys mainKey = e.KeyCode;
             return modifiers.Count > 0 ? $"{string.Join("+", modifiers)}+{mainKey}" : mainKey.ToString();
         }
@@ -301,5 +302,24 @@ if (e.Shift) modifiers.Add("Shift");
             _captureMouseHook.Dispose();
         }
         #endregion
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            // Get the pokemonBarPosition from settings
+            Point pokemonBarPosition = new Point(_settings.RevivePositionX, _settings.RevivePositionY);
+
+            // Start stopwatch
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            // Check if the pokemon is fainted
+            bool isFainted = ScreenAnalyzer.FindFaintedIcon(pokemonBarPosition, 0.75);
+
+            // Stop stopwatch
+            stopwatch.Stop();
+
+            // Log the result and elapsed time
+            Console.WriteLine($"Pokémon está desmaiado: {isFainted}. Tempo de verificação: {stopwatch.ElapsedMilliseconds} ms");
+        }
     }
+    
 }

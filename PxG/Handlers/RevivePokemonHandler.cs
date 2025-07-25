@@ -82,12 +82,16 @@ namespace PxG.Handlers
         }
 
         /// <summary>
-        /// Executa uma sequência rápida para reviver um Pokémon, bloqueando a entrada do usuário durante a operação.
+        /// Executa uma sequência de revive em um Pokémon, com uma lógica condicional baseada em seu estado.
         /// </summary>
         /// <remarks>
-        /// IMPORTANTE: Este método assume que a tecla de atalho do item de reviver ('reviveKey') 
-        /// está configurada para uso rápido no jogo. A entrada do usuário (mouse e teclado) será
-        /// desativada temporariamente para garantir a precisão da automação.
+        /// O fluxo de execução é o seguinte:
+        /// 1. O método primeiro verifica se o Pokémon na posição especificada está desmaiado.
+        /// 2. Se o Pokémon NÃO estiver desmaiado, a tecla de atalho dele é pressionada (geralmente para recolhê-lo) e o fluxo continua.
+        /// 3. Em seguida, a entrada do usuário (mouse e teclado) é bloqueada para garantir a precisão da automação.
+        /// 4. A sequência de revive é executada: o cursor é movido para a posição do Pokémon, a tecla do item de revive é pressionada, e a tecla do Pokémon é pressionada novamente.
+        /// 5. Finalmente, a entrada do usuário é desbloqueada, independentemente do resultado.
+        /// Este método garante que a automação seja executada em ambos os cenários (Pokémon desmaiado ou não) para ativar o cooldown do item.
         /// </remarks>
         public async Task ExecuteFastRevive(IntPtr targetWindowHandle, Keys pokemonKey, Keys reviveKey,
             Point pokemonBarPosition)
@@ -97,56 +101,56 @@ namespace PxG.Handlers
                 throw new ArgumentException(@"O handle da janela alvo não pode ser nulo.", nameof(targetWindowHandle));
             }
 
+            // A automação agora executa o fluxo completo sem verificar se o Pokémon está desmaiado,
+            // garantindo que o cooldown seja sempre ativado.
+            var inputBlocked = false;
             try
             {
-                bool success = BlockInput(true);
-                if (!success)
-                {
-                    // Se falhar, obtém o código do erro da API do Windows
-                    int errorCode = Marshal.GetLastWin32Error();
-                    // Escreve no console para sabermos o que aconteceu
-                    Console.WriteLine($@"FALHA AO BLOQUEAR A ENTRADA. Código de erro Win32: {errorCode}");
-                    // Código 5 significa "Acesso Negado", o que reforça a necessidade de rodar como Admin.
-                }
-
-
-                // 2) Verificamos se o ícone de "desmaiado" está realmente presente.
                 bool isFainted = ScreenAnalyzer.FindFaintedIcon(pokemonBarPosition, 0.75);
 
                 if (!isFainted)
                 {
                     KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
-                    Console.WriteLine(@"O Pokémon não está desmaiado.");
-                    await Task.Delay(450);
+                    //Console.WriteLine(@"O Pokémon não está desmaiado.");
+                    await Task.Delay(350);
                     
                 }
+                
+                if (BlockInput(true))
+                {
+                    inputBlocked = true;
+                }
+                else
+                {
+                    var errorCode = Marshal.GetLastWin32Error();
+                    Console.WriteLine($@"FALHA AO BLOQUEAR A ENTRADA. Código de erro Win32: {errorCode}");
+                }
 
-                // Pega a posição atual do mouse para restaurar depois
                 var originalMousePosition = _cursorHandler.GetCurrentPosition();
 
-                // 3) Segunda etapa: Usar o item de reviver
-     
-
                 _cursorHandler.SetCursorPosition(pokemonBarPosition);
-                await Task.Delay(150);
+                await Task.Delay(80);
 
                 KeyboardHandler.SendKey(targetWindowHandle, reviveKey);
-                await Task.Delay(150);
+                await Task.Delay(40);
 
                 KeyboardHandler.SendKey(targetWindowHandle, pokemonKey);
 
-                // Restaura a posição original do mouse
                 if (originalMousePosition.HasValue)
                 {
                     _cursorHandler.SetCursorPosition(originalMousePosition.Value);
                 }
-                // 4) REATIVA a entrada do usuário, aconteça o que acontecer.
-                // Este bloco é executado mesmo que ocorra um erro no 'try'.
-                
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($@"ERRO DURANTE A EXECUÇÃO RÁPIDA: {ex.Message}");
             }
             finally
             {
-                BlockInput(false);
+                if (inputBlocked)
+                {
+                    BlockInput(false);
+                }
             }
         }
     }

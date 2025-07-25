@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using PxG.Handlers;
 using PxG.Models;
 using System;
@@ -72,9 +73,6 @@ namespace PxG.Services
             StatusUpdated?.Invoke($"Modo Auto ATIVO. Pressione '{settings.ExecuteKey}'.", Color.Green);
         }
         
-        /// <summary>
-        /// Para o serviço de automação, desativando e limpando os hooks globais.
-        /// </summary>
         public void Stop()
         {
             if (!IsRunning) return;
@@ -114,7 +112,7 @@ namespace PxG.Services
         /// <param name="settings">As configurações atuais da aplicação.</param>
         private async Task ExecuteReviveTask(AppSettings settings)
         {
-            var windowHandle = _targetWindowHandle; 
+            var windowHandle = _targetWindowHandle;
             if (windowHandle == IntPtr.Zero) return;
 
             if (!KeyboardHandler.TryParseKey(settings.PokemonKey, out var pokemonKey) ||
@@ -129,7 +127,15 @@ namespace PxG.Services
             var relativePoint = windowInfo.ScreenToClient(revivePosition);
 
             StatusUpdated?.Invoke("⚡ Revive executado!", Color.DodgerBlue);
-            await _reviveHandler.ExecuteFastRevive(windowHandle, pokemonKey, reviveKey, relativePoint);
+
+            try
+            {
+                await _reviveHandler.ExecuteFastRevive(windowHandle, pokemonKey, reviveKey, relativePoint);
+            }
+            catch (Exception ex)
+            {
+                StatusUpdated?.Invoke($"ERRO INESPERADO NO REVIVE: {ex.Message}", Color.Red);
+            }
         }
         
         /// <summary>
